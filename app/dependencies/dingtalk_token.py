@@ -1,10 +1,5 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from fastapi import HTTPException
 import httpx
-import datetime
-from datetime import time, timedelta
-import asyncio
 
 DINGTALK_APP_KEY = "ding58btzmclcdgd18uu"
 DINGTALK_APP_SECRET = "G3CsonOxr853FnDiEd3k0PaJOHBj6qCs-d9ILKsrVApZbyHE2Opp4E-yN-ljgrhT"

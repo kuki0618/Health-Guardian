@@ -1,1 +1,1 @@
-from .dingtalk import ge
+from .dingtalk.get_attendence2 import AttendanceManager

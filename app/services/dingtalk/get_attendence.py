@@ -106,7 +106,7 @@ class AttendanceResponse(BaseModel):
     error_msg: Optional[str] = None  # 错误信息
 
 @app.get("/{userid}/attendance",response_model=AttendanceResponse)       
-async def process_attendance_for_user(userids: List[str]):
+async def process_attendance_for_user(userid:str):
     """为单个用户处理考勤"""
     try:
         today = datetime.now().strftime("%Y-%m-%d")

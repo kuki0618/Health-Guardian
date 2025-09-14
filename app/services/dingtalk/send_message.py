@@ -41,6 +41,8 @@ async def get_dingtalk_access_token() -> str:
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"ªÒ»°∑√Œ ¡Ó≈∆ ß∞‹: {str(e)}")
 
+def reschedule_data(data:dict):
+    final_data = []
 
 @app.post("/async-send-message")
 async def send_message(request: AsyncSendRequest):

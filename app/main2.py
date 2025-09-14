@@ -1,11 +1,14 @@
 from fastapi import FastAPI
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from .services.dingtalk import get_user_info,get_attendence,get_ifFree,get_schedule_list,get_sport_info,get_weather
+from .services.dingtalk import get_user_info,get_attendence,get_ifFree,get_schedule_list,get_sport_info,get_weather,send_message
 from .repository import action
+from .services.dingtalk import send_message 
+from .utils.change_time_format import change_time_format
 app = FastAPI()
 
 attendance_manager = AttendanceManager()
+AMAP_API_KEY = "d10ec8ed5659cf8d930ed3752b47efb5"
 
 # 创建两个调度器实例
 scheduler_status = AsyncIOScheduler()
@@ -73,8 +76,24 @@ def conditional_attendance(userids:List[str]):
 
 def conditional_status(userids: List[str]):
     for userid in userids:
+        #如果用户已经签到但是没有签退，那么就查询用户是否在线
         if attendance_manager.daily_status[userid]["checked_in"] == True and attendance_manager.daily_status[userid]["checked_out"] == False:
             result = get_ifFree.get_user_free_busy_status(userid)
+            #如果在线，那么就插入数据
             if len(result)!=0:
                 action.insert_online_item(father_table_name="online_status",son_table_name="online_time_periods",data_list=result)
+                #如果用户在线时间超过90分钟，那么就发送消息
+                if change_time_format(result["start_time"],result["end_time"])>90 * 60:
+                    user_msg = action.get_item_by_id(userid,timeable = "employees")
+                    whether_msg = get_weather(AMAP_API_KEY)
+                    before_msg = action.get_online_time_periods(userid,father_table_name="online_status",son_table_name="online_time_periods",target_date="2024-08-13")
+                    all_msg = {**user_msg, **whether_msg, **before_msg} 
+                    #通过函数传给大模型
+                    pass_data(all_msg)
+                    health_msg = deepseek_info(userid)
+                    #调用发送消息函数发送消息
+                    health_model = send_message.AsyncSendRequest(userid_list=[userid],msg_type="text",content=health_msg)
+                    send_message.send_message(health_model)
+
+            
             

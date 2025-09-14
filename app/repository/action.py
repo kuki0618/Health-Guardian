@@ -62,6 +62,17 @@ async def get_item_by_id(
         raise HTTPException(status_code=404, detail="Item not found")
     return row.json()
 
+# 查询某个表的所有主键值
+@app.get("/{table_name}/values")
+async def get_primary_values(table_name:str,conn = Depends(database.get_db)):
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute(f"SHOW KEYS FROM {table_name} WHERE Key_name = 'PRIMARY'")
+    pk_column = cursor.fetchone()[4]  # Column_name是第5个字段
+
+    cursor.execute(f"SELECT {pk_column} FROM {table_name}")
+    pk_values = [row[0] for row in cursor.fetchall()]
+    return pk_values
+
 # 条件查询
 @app.get("/{table_name}/search")
 async def search_items(
@@ -156,6 +167,58 @@ async def delete_item(
     
     return {"message": "Item deleted"}
 
+#插入数据到关联表
+async def insert_online_item(
+    father_table_name: str,
+    son_table_name:str,
+    data_list: List[dict],
+    conn = Depends(database.get_db)
+):
+    cursor = conn.cursor(dictionary=True)
+    for data in data_list:
+        user_id = data['user_id']
+        date = data['date']
+        start_datetime = data['start_datetime']
+        end_datetime = data['end_datetime']
+        
+        # 第一步：插入主表 online_status，获取attendance_id
+        insert_main_query = f"""
+        INSERT INTO {father_table_name} (userid, date) 
+        VALUES (%s, %s)
+        """
+        cursor.execute(insert_main_query, (user_id, date))
+        
+        # 获取刚插入的主键ID
+        attendance_id = cursor.lastrowid
+        
+        # 第二步：插入子表 online_time_periods
+        insert_period_query = f"""
+        INSERT INTO {son_table_name} (attendance_id, start_datetime, end_datetime) 
+        VALUES (%s, %s, %s)
+        """
+        
+        # 处理datetime格式（移除时区信息）
+        def format_datetime(dt_str):
+            if dt_str and 'T' in dt_str:
+                if '+' in dt_str:
+                    dt_str = dt_str.split('+')[0]
+                return dt_str.replace('T', ' ')
+            return dt_str
+        
+        # 插入时间段数据
+        cursor.execute(insert_period_query, (
+            attendance_id,
+            format_datetime(start_datetime),
+            format_datetime(end_datetime)
+        ))
+    
+        # 提交事务
+        conn.commit()
+    '''
+    if cursor.lastrowid:
+        return {"message": "Item created", "id": cursor.lastrowid}
+    return {"message": "Item created"}
+    '''
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

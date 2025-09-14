@@ -36,6 +36,7 @@ VALUES (
         26
     );
 
+'''
 CREATE TABLE clock_records (
     record_id INT AUTO_INCREMENT PRIMARY KEY, -- 序号（自增主键）
     date DATE NOT NULL, -- 日期
@@ -64,3 +65,49 @@ VALUES (
         '09:45:00',
         '20:45:00'
     );
+'''
+
+CREATE TABLE online_status (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    userid VARCHAR(255) NOT NULL,
+    date DATE NOT NULL
+);
+
+CREATE TABLE online_time_periods (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    attendance_id INT NOT NULL, -- 外键，关联到主表的任务ID
+    start_datetime DATETIME,
+    end_datetime DATETIME,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+-- 建立外键约束，保证数据完整性
+FOREIGN KEY (attendance_id) REFERENCES online_status(id) ON DELETE CASCADE
+);
+
+INSERT INTO
+    online_status (userid, date)
+VALUES ('manager4585', '2025-09-06');
+
+-- 获取刚插入的任务ID（假设为 1），然后向时间段子表插入多个时间段
+INSERT INTO
+    online_time_periods (
+        attendance_id,
+        start_datetime,
+        end_datetime
+    )
+VALUES (
+        1,
+        '2023-10-28 09:00:00',
+        '2023-10-30 18:00:00'
+    ),
+    (
+        1,
+        '2023-10-31 09:00:00',
+        '2023-11-01 18:00:00'
+    ),
+    (
+        1,
+        '2023-11-02 10:00:00',
+        NULL
+    );
+-- 甚至可以有一个未结束的时间段

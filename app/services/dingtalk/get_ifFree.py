@@ -2,7 +2,22 @@ from core.config import uvicorn,IntervalTrigger,BackgroundScheduler,asyncio,Fast
 
 app = FastAPI(title="钉钉用户忙闲状态查询服务")
 userids ={}
-
+def reschedule_data(data:dict):
+    flat_data_list = []
+    for schedule_info in data['scheduleInformation']:
+        user_id = schedule_info['userId']
+        for item in schedule_info['scheduleItems']:
+            # 创建扁平化的字典
+            flat_data = {
+                # 第一层数据
+                'user_id': user_id,
+                "date":item['start']['date'],
+                'start_datetime': item['start']['dateTime'],
+                'end_datetime': item['end']['dateTime']
+            }
+            
+            flat_data_list.append(flat_data)
+    return flat_data_list
 # 请求模型
 class FreeBusyRequest(BaseModel):
     userIds: List[str]  # 用户ID列表
@@ -11,9 +26,11 @@ class FreeBusyRequest(BaseModel):
 
 class Start(BaseModel):
     date:str
+    dateTime:str
 
 class End(BaseModel):
     date:str
+    dateTime:str
 
 class FreeBusyItem(BaseModel):
     status: str  # 用户ID
@@ -21,7 +38,7 @@ class FreeBusyItem(BaseModel):
     end:End
 
 class scheduleInformation(BaseModel):
-    userId: str  # 请求ID
+    userId: str  
     error:str
     scheduleItems: List[FreeBusyItem]  # 忙闲状态列表
 
@@ -57,7 +74,11 @@ async def get_user_free_busy_status(userid:str):
             
             if response.status_code == 200:
                 result = response.json()
-                return result
+                if len(result["scheduleInformation"])!=0:
+                    result = reschedule_data(result)
+                    return result
+                else: 
+                    return []
             else:
                 error_msg = f"忙闲状态查询失败: {response.status_code}, {response.text}"
                 raise HTTPException(status_code=response.status_code, detail=error_msg)

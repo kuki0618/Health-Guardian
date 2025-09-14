@@ -15,7 +15,7 @@ action.get_tables(table_name="Allusers")
 scheduler_attendence = BackgroundScheduler()
 scheduler_status = BackgroundScheduler()
 
-attendance_manager = AttendanceManager()
+
 
 userids = ["zhangsan","lisi","zhaowu"]
 AMAP_API_KEY = "d10ec8ed5659cf8d930ed3752b47efb5"

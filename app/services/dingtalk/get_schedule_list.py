@@ -1,7 +1,7 @@
 from core.config import HTTPException,FastAPI,BaseModel,Optional,Dict,List,Any,get_dingtalk_access_token,httpx
 
 app = FastAPI(title="钉钉用户信息API", version="1.0.0")
-
+'''
 class EventAttendee(BaseModel):
     id: str
     displayName: Optional[str] = None
@@ -29,14 +29,13 @@ class EventsResponse(BaseModel):
     events: List[CalendarEvent]
     nextPageToken: Optional[str] = None
     requestId: str
-
-@app.get("/calendar/events", response_model=EventsResponse)
+'''
+@app.get("/calendar/events")
 async def get_calendar_events(
     userId: str,
     calendarId: str,
     time_min: Optional[str] = None,
     time_max: Optional[str] = None,
-    max_results: int = 100,
 ):
     access_token = await get_dingtalk_access_token()
     
@@ -48,11 +47,8 @@ async def get_calendar_events(
     headers = {"Content-Type": "application/json"}
     params = {
         "accessToken": access_token,
-        "userId": userId,
-        "calendarId": calendarId,
-        "time_min": time_min,  # 可选
-        "time_max": time_max,  # 可选
-        "max_results": max_results,  # 可选
+        "timeMin": time_min,
+        "timeMax": time_max,  # 可选
     }
     try:
         async with httpx.AsyncClient() as client:

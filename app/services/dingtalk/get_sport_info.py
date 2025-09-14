@@ -7,16 +7,11 @@ DINGTALK_APP_SECRET = "G3CsonOxr853FnDiEd3k0PaJOHBj6qCs-d9ILKsrVApZbyHE2Opp4E-yN
 
 # 数据模型
 class StepInfo(BaseModel):
-    statDate: str  # 统计日期，格式：yyyy-MM-dd
-    stepCount: int  # 步数
+    step_count: int  # 步数
 
 class UserStepResponse(BaseModel):
-    stepInfoList: List[StepInfo]
-    success: bool
-
-class DeptStepResponse(BaseModel):
-    stepInfoList: List[StepInfo]
-    success: bool
+    stepinfo_list: List[StepInfo]
+    errcode:int
 
 '''获取凭证信息'''
 async def get_dingtalk_access_token() -> str:
@@ -35,6 +30,7 @@ async def get_dingtalk_access_token() -> str:
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"获取访问令牌失败: {str(e)}")
 
+@app.get("/user/steps",response_model=UserStepResponse)
 async def fetch_user_steps(
     object_id: str,
     stat_date: str,
@@ -48,7 +44,7 @@ async def fetch_user_steps(
     params = {"accessToken": access_token}
     headers = {"Content-Type": "application/json"}
     data = {"object_id":object_id,
-            "stat_date":stat_date,
+            "stat_dates":stat_date,
             "type":type}
     try:
         async with httpx.AsyncClient() as client:

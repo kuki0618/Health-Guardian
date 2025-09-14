@@ -60,7 +60,7 @@ async def get_item_by_id(
     
     if not row:
         raise HTTPException(status_code=404, detail="Item not found")
-    return row
+    return row.json()
 
 # Ìõ¼þ²éÑ¯
 @app.get("/{table_name}/search")

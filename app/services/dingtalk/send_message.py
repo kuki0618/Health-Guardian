@@ -66,9 +66,9 @@ async def send_message(request: AsyncSendRequest):
         # 3. 构建请求体
         data = {
             "agent_id": 11,
+            "to_all_user":True,
             "userid_list": request.msg_key,
-            "userId": request.user_id,
-            "robotCode": request.robot_code
+            "msg":request.msg
         }
         
         # 4. 发送异步消息请求

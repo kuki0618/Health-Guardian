@@ -87,21 +87,19 @@ class AttendanceManager:
 
 #明天继续修改，使之获得想要的数据
 class AttendanceRequest(BaseModel):
-    userid: str 
-    start_time: str
-    end_time: str
-    cursor: int = 0
+    userIdList: List[str] 
+    workDateFrom: str
+    workDateTo: str
+    limit: int = 0
     size: int = 50
 
-class CheckInRecord(BaseModel):
+class recordResult(BaseModel):
     userCheckTime:str
-    timeResult:str
-    locationResult:str
     checkType:str
     userId:str
 
 class AttendanceResponse(BaseModel):
-    recordresult: Optional[List[CheckInRecord]] = None  # 签到记录列表
+    recordresult: Optional[List[recordResult]] = None  # 签到记录列表
     error_code: Optional[str] = None  # 错误码
     error_msg: Optional[str] = None  # 错误信息
 
@@ -128,7 +126,7 @@ async def process_attendance_for_user(userid:str):
         params = {"accessToken": access_token}
         headers = {"Content-Type": "application/json"}
         data = {
-            "userIdList": userids,
+            "userIdList": [userid],
             "workDateFrom": start_timestamp,
             "workDateTo": end_timestamp
         }
@@ -137,7 +135,9 @@ async def process_attendance_for_user(userid:str):
             response = await client.post(url, params=params, headers=headers, json=data)
             response.raise_for_status()
             response = response.json()
-            if response["timeResult"] != "NotSigned":
+            if data["recordresult"]:
+                record = data["recordresult"][0]
+                '''
                 final = {
                 "success":response["success"],
                 "checkin_time":response["result"]["checkin_time"],
@@ -148,6 +148,7 @@ async def process_attendance_for_user(userid:str):
                     "checked":True,
                     "result": response
                 }
+                '''
             else:
                 return {
                     "action_taken": True,

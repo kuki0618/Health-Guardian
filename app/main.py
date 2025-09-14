@@ -65,10 +65,11 @@ async def startup_event():
 async def shutdown_event():
     if scheduler_attendence.running:
         scheduler_attendence.shutdown()
-
+        
+action.create_item(table_name="Allusers",item=result)
 for userid in userids:
     result = get_user_details(userid)
-    action.create_item(table_name="Allusers",item=result)
+    
 
     #使用能相减的时间数据
     start_time = result["start"]["date"]

@@ -5,33 +5,16 @@ app = FastAPI(title="钉钉用户信息API", version="1.0.0")
 class UserIdRequest(BaseModel):
     userid: str = Query(..., description="用户ID")
 
+class Result(BaseModel):
+    userid:str
+    name:str
+    title:str
+    extension:str
+
 class UserDetailResponse(BaseModel):
-    userid: str
-    unionid: Optional[str] = None
-    name: str
-    avatar: Optional[str] = None
-    state_code: str
-    manager_userid: Optional[str] = None
-    mobile: Optional[str] = None
-    hide_mobile: Optional[bool] = None
-    telephone: Optional[str] = None
-    job_number: Optional[str] = None
-    title: Optional[str] = None
-    email: Optional[str] = None
-    work_place: Optional[str] = None
-    remark: Optional[str] = None
-    org_email: Optional[str] = None
-    dept_id_list: Optional[list] = None
-    dept_order_list: Optional[list] = None
-    extension: Optional[str] = None
-    hired_date: Optional[int] = None
-    active: Optional[bool] = None
-    real_authed: Optional[bool] = None
-    admin: Optional[bool] = None
-    boss: Optional[bool] = None
-    exclusive_account: Optional[bool] = None
-    login_id: Optional[str] = None
-    exclusive_account_type: Optional[str] = None
+    errcode:int
+    result:Result
+    
         
 @app.post("/v1.0/contact/users/get",response_model=UserDetailResponse)
 async def get_user_details(userid:str):
@@ -52,7 +35,13 @@ async def get_user_details(userid:str):
         try:
             response = await client.post(url, params=params,headers=headers,json=data)
             response.raise_for_status()
-            return response.json()
+            #从JSON字符串转换为Python字典/对象
+            response = response.json()
+            if "extension" in data["result"]:
+                extension_data = data["result"].pop("extension")  # 删除extension并获取其内容
+                data["result"].update(extension_data)  # 将extension内容合并到result中
+            data["hobby"] = data["result"].pop("爱好")
+            data["age"] = data["result"].pop("年龄")
         except httpx.HTTPStatusError as e:  
             if e.response.status_code == 404:
                 raise HTTPException(status_code=404, detail="用户不存在")

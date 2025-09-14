@@ -6,19 +6,24 @@ userids ={}
 # 请求模型
 class FreeBusyRequest(BaseModel):
     userIds: List[str]  # 用户ID列表
-    timeMin: str  # 开始时间
-    timeMax: str  # 结束时间
-
-'''返回数据格式'''
-class FreeBusyItem(BaseModel):
-    userId: str  # 用户ID
-    busyStatus: str  # 忙闲状态：free-闲，busy-忙
     startTime: str  # 开始时间
     endTime: str  # 结束时间
 
-class FreeBusyResponse(BaseModel):
-    requestId: str  # 请求ID
-    freeBusyItems: List[FreeBusyItem]  # 忙闲状态列表
+class Start(BaseModel):
+    date:str
+
+class End(BaseModel):
+    date:str
+
+class FreeBusyItem(BaseModel):
+    status: str  # 用户ID
+    start: Start  # 忙闲状态：free-闲，busy-忙
+    end:End
+
+class scheduleInformation(BaseModel):
+    userId: str  # 请求ID
+    error:str
+    scheduleItems: List[FreeBusyItem]  # 忙闲状态列表
 
 async def get_user_free_busy_status(userid:str):
     """
@@ -26,7 +31,7 @@ async def get_user_free_busy_status(userid:str):
     """
     access_token = await get_dingtalk_access_token()
 
-    # 设置查询时间范围（当前时间到2小时后）
+    # 设置查询时间范围（当前时间到2小时前）
     time_max = datetime.now()
     time_min = time_max - timedelta(hours=2)
     
@@ -37,8 +42,8 @@ async def get_user_free_busy_status(userid:str):
     # 构建请求数据
     data = {
         "userIds": "",
-        "timeMin": time_min_iso,
-        "timeMax": time_max_iso
+        "startTime": time_min_iso,
+        "endTime": time_max_iso
     }
     
     url = f"/v1.0/calendar/users/{userid}/getSchedule HTTP/1.1"
@@ -75,27 +80,3 @@ def scheduled_free_busy_task():
     except Exception as e:
         pass
 
-scheduler = BackgroundScheduler()
-
-@app.on_event("startup")
-async def startup_event():
-    scheduler.add_job(
-        scheduled_free_busy_task,
-        trigger=IntervalTrigger(hours=1),
-        replace_existing=True
-    )
-    
-    # 启动调度器
-    if not scheduler.running:
-        scheduler.start()
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """
-    应用关闭时停止调度器
-    """
-    if scheduler.running:
-        scheduler.shutdown()
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)

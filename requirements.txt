@@ -1,26 +1,16 @@
-# 1. Web框架与服务器
 fastapi>=0.104.1
 uvicorn[standard]>=0.24.0
-
-# 2. 数据库操作 (ORM & 驱动)
 sqlmodel>=0.0.11
 pymysql>=1.1.0
-# 如果您之后改用PostgreSQL，可以替换为：
-# psycopg2-binary==2.9.9
-
-# 3. HTTP请求库 (用于调用钉钉和大模型API)
 requests>=2.31.0
-httpx>=0.25.2  # 【可选】异步HTTP客户端，性能更好
+httpx>=0.25.2 
 
-# 4. 任务调度
 apscheduler>=3.10.4
 
-# 5. 配置与环境变量管理
 python-dotenv>=1.0.0
-pydantic-settings>=2.1.0  # 用于强化配置管理
+pydantic-settings>=2.1.0  
 
-# 6. 日期时间处理
-python-dateutil>=2.8.2  # 更便捷的日期时间工具
 
-# 7. 开发调试工具（可选但强烈推荐）
-python-multipart>=0.0.6  # 支持表单解析，虽然可能用不上但FastAPI推荐安装
+python-dateutil>=2.8.2  
+
+python-multipart>=0.0.6  

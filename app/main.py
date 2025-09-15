@@ -1,13 +1,19 @@
 from fastapi import FastAPI
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from typing import List
+from datetime import datetime,timedelta
+
 from .services.dingtalk import get_user_info,get_attendence,get_ifFree,get_schedule_list,get_sport_info,get_weather,send_message
 from .repository import action
 from .services.dingtalk import send_message 
 from .utils.change_time_format import change_time_format
+from .models import models
+
+
 app = FastAPI()
 
-attendance_manager = AttendanceManager()
+attendance_manager = get_attendence.AttendanceManager()
 AMAP_API_KEY = "d10ec8ed5659cf8d930ed3752b47efb5"
 
 # 创建两个调度器实例
@@ -62,6 +68,7 @@ async def shutdown_event():
     if scheduler_attendance.running:
         scheduler_attendance.shutdown()
 
+#检查用户是否应该签到
 def conditional_attendance(userids:List[str]):
     for userid in userids:
         if get_attendence.attendance_manager.should_check_in(userid):
@@ -77,6 +84,7 @@ def conditional_attendance(userids:List[str]):
                 action.add_attendence_info(result["data"])
                 get_attendence.attendance_manager.mark_checked_out(userid)
 
+#检查用户是否应该查询工作状态
 def conditional_status(userids: List[str]):
     for userid in userids:
         #如果用户已经签到但是没有签退，那么就查询用户是否在线
@@ -88,12 +96,38 @@ def conditional_status(userids: List[str]):
                 #如果用户在线时间超过90分钟，那么就发送消息
                 if change_time_format(result["start_time"],result["end_time"])>90 * 60:
                     user_msg = action.get_item_by_id(userid,timeable = "employees")
+                    '''
+                    "employee_info":{"userid":"manager4585","name":小赵,"title":"算法工程师","hobby":"散步",“age”:"25"},
+                    '''
                     whether_msg = get_weather(AMAP_API_KEY)
-                    before_msg = action.get_online_time_periods(userid,father_table_name="online_status",son_table_name="online_time_periods",target_date="2024-08-13")
-                    all_msg = {**user_msg, **whether_msg, **before_msg} 
+                    '''
+                    "weather":{
+                    "温度(℃)": weather_data["lives"][0]["temperature"],
+                    "天气状况": weather_data["lives"][0]["weather"],
+                    "湿度(%)": weather_data["lives"][0]["humidity"],
+                    "风力": weather_data["lives"][0]["windpower"],
+                    }
+                    '''
+                    #设计前七天的时间数据
+                    target_times = []
+                    for i in range(7):
+                        date = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+                        target_times.append(date)
+                    before_msg = action.get_online_time_periods(userid,target_times)
+                    '''
+                     "work_status":{
+                        "2023-10-01": [
+                            ("2023-10-01 09:00:00", "2023-10-01 12:00:00"),
+                            ("2023-10-01 14:00:00", "2023-10-01 18:00:00")
+                        ],
+                        "2023-10-02": [
+                            ("2023-10-02 08:30:00", "2023-10-02 17:30:00")
+                        ]
+                    }  
+                    '''
+                    all_msg = {"employee_info":{**user_msg}, "weather":{**whether_msg}, "work_status":{**before_msg}} 
                     #通过函数传给大模型
-                    pass_data(all_msg)
-                    health_msg = deepseek_info(userid)
+                    health_msg = models.create_message(all_msg)
                     #调用发送消息函数发送消息
                     health_model = send_message.AsyncSendRequest(userid_list=[userid],msg_type="text",content=health_msg)
                     send_message.send_message(health_model)

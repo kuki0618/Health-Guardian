@@ -1,4 +1,4 @@
-from core.config import FastAPI,HTTPException,httpx
+from fastapi import FastAPI,HTTPException,httpx
 
 DINGTALK_APP_KEY = "ding58btzmclcdgd18uu"
 DINGTALK_APP_SECRET = "G3CsonOxr853FnDiEd3k0PaJOHBj6qCs-d9ILKsrVApZbyHE2Opp4E-yN-ljgrhT"

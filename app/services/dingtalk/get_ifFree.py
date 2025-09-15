@@ -1,4 +1,12 @@
-from core.config import uvicorn,IntervalTrigger,BackgroundScheduler,asyncio,FastAPI,HTTPException,BaseModel,Optional,httpx,datetime,timedelta,get_dingtalk_access_token,List
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import asyncio
+from typing import List
+import httpx
+import datetime
+from datetime import timedelta
+from dependencies.dingtalk_token import get_dingtalk_access_token
+
 
 app = FastAPI(title="钉钉用户忙闲状态查询服务")
 userids ={}

@@ -1,4 +1,9 @@
-from core.config import FastAPI,HTTPException,BaseModel,List,httpx,Dict,Any
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List, Dict, Any
+import httpx
+
+from dependencies.dingtalk_token import get_dingtalk_access_token
 
 app = FastAPI(title="钉钉运动步数查询服务")
 

@@ -1,4 +1,8 @@
-from core.config import FastAPI,HTTPException,BaseModel,Optional,Dict,Any,get_dingtalk_access_token,httpx,Query
+from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel
+import httpx
+
+from dependencies.dingtalk_token import get_dingtalk_access_token
 
 app = FastAPI(title="钉钉用户信息API", version="1.0.0")
 

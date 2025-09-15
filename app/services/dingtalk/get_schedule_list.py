@@ -1,4 +1,9 @@
-from core.config import HTTPException,FastAPI,BaseModel,Optional,Dict,List,Any,get_dingtalk_access_token,httpx
+from fastapi import FastAPI, HTTPException
+from typing import Optional
+import httpx
+
+from dependencies.dingtalk_token import get_dingtalk_access_token
+
 
 app = FastAPI(title="钉钉用户信息API", version="1.0.0")
 '''

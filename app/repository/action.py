@@ -74,20 +74,6 @@ async def get_primary_values(table_name:str,conn = Depends(database.get_db)):
     pk_values = [row[0] for row in cursor.fetchall()]
     return pk_values
 
-# 条件查询
-@app.get("/{table_name}/search")
-async def search_items(
-    table_name: str,
-    field: str,
-    value: str,
-    conn = Depends(database.get_db)
-):
-    cursor = conn.cursor(dictionary=True)
-    query = f"SELECT * FROM {table_name} WHERE {field} LIKE %s"
-    cursor.execute(query, (f"%{value}%",))
-    rows = cursor.fetchall()
-    return {"data": rows}
-
 # 插入数据
 @app.post("/{table_name}")
 async def create_item(
@@ -110,63 +96,6 @@ async def create_item(
     if cursor.lastrowid:
         return {"message": "Item created", "id": cursor.lastrowid}
     return {"message": "Item created"}
-
-# 更新数据
-@app.put("/{table_name}/{id}")
-async def update_item(
-    table_name: str,
-    id: int,
-    item: dict,
-    conn = Depends(database.get_db)
-):
-    cursor = conn.cursor(dictionary=True)
-    
-    # 获取主键字段名
-    cursor.execute(f"SHOW KEYS FROM {table_name} WHERE Key_name = 'PRIMARY'")
-    primary_key = cursor.fetchone()
-    if not primary_key:
-        raise HTTPException(status_code=400, detail="No primary key found")
-    
-    pk_column = primary_key['Column_name']
-    
-    # 构建更新语句
-    set_clause = ", ".join([f"{key} = %s" for key in item.keys()])
-    values = tuple(item.values()) + (id,)
-    
-    query = f"UPDATE {table_name} SET {set_clause} WHERE {pk_column} = %s"
-    cursor.execute(query, values)
-    conn.commit()
-    
-    if cursor.rowcount == 0:
-        raise HTTPException(status_code=404, detail="Item not found")
-    
-    return {"message": "Item updated"}
-
-# 删除数据
-@app.delete("/{table_name}/{id}")
-async def delete_item(
-    table_name: str,
-    id: int,
-    conn = Depends(database.get_db)
-):
-    cursor = conn.cursor(dictionary=True)
-    
-    # 获取主键字段名
-    cursor.execute(f"SHOW KEYS FROM {table_name} WHERE Key_name = 'PRIMARY'")
-    primary_key = cursor.fetchone()
-    if not primary_key:
-        raise HTTPException(status_code=400, detail="No primary key found")
-    
-    pk_column = primary_key['Column_name']
-    
-    query = f"DELETE FROM {table_name} WHERE {pk_column} = %s"
-    cursor.execute(query, (id,))
-    conn.commit()
-    
-    if cursor.rowcount == 0:
-        raise HTTPException(status_code=404, detail="Item not found")
-    
-    return {"message": "Item deleted"}
 
 #插入数据到关联表
 async def insert_online_item(
@@ -222,39 +151,37 @@ async def insert_online_item(
     '''
 #获取指定员工和日期的在线时间段数据
 def get_online_time_periods(
-        userid: str, 
-        father_table_name: str,
-        son_table_name:str,
-        target_date: str,
+        userid:str, 
+        target_times: List[str],
         conn = Depends(database.get_db)) -> List[Dict[str, Any]]:
-        
+        all_periods = {}
         cursor = conn.cursor(dictionary=True)
-        
+        for target_time in target_times:
         # 查询主表获取attendance_id
-        query_main = f"""
-        SELECT id FROM {father_table_name} 
-        WHERE userid = %s AND date = %s
-        """
-        cursor.execute(query_main, (userid, target_date))
-        main_record = cursor.fetchone()
+            query_main = f"""
+            SELECT id FROM online_status
+            WHERE userid = %s AND date = %s
+            """
+            cursor.execute(query_main, (userid, target_time))
+            main_record = cursor.fetchone()
+            
+            if not main_record:
+                print(f"未找到员工 {userid} 在 {target_time} 的记录")
+                return []
+            
+            task_id = main_record['id']
+            
+            # 查询时间段子表
+            query_periods = f"""
+            SELECT start_datetime, end_datetime 
+            FROM online_time_periods 
+            WHERE task_id = %s 
+            ORDER BY start_datetime
+            """
+            cursor.execute(query_periods, (task_id,))
+            all_periods[target_time] = cursor.fetchall()
         
-        if not main_record:
-            print(f"未找到员工 {userid} 在 {target_date} 的记录")
-            return []
-        
-        attendance_id = main_record['id']
-        
-        # 查询时间段子表
-        query_periods = f"""
-        SELECT start_datetime, end_datetime 
-        FROM {son_table_name} 
-        WHERE attendance_id = %s 
-        ORDER BY start_datetime
-        """
-        cursor.execute(query_periods, (attendance_id,))
-        time_periods = cursor.fetchall()
-        
-        return time_periods
+        return all_periods
 
 #插入健康提醒数据到提醒表
 async def insert_health_msg(

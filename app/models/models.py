@@ -1,194 +1,236 @@
-# 从get_employee_data函数中获取多个员工信息
-# 传入数据方式：修改get_employee_data函数中的内容
-
-from openai import OpenAI
-import json
+import os
 from datetime import datetime
 
-client = OpenAI(
-    api_key="Your-api-key-here",
-    base_url="https://api.deepseek.com"
-)
-
-system_content = """
-你是一名职工健康提示助手，根据提供的JSON格式数据对员工进行健康提醒。
-健康提醒无需以JSON格式输出。
-JSON数据已预先准备好，包含以下字段(以下为示例，提示时请以实际数据为准)：
-{{
-  "employee_info":
-  {{
-    "name": "pkx",
-    "ID":1111,
-    "age": 20,
-    "workspace": "A115",
-    "position": "研发部",
-    "hobbies":"音乐"
-  }},
-  "check_in_out":
-  {{
-    "09:00 a.m.": "离开",
-    "10:00 a.m.": "离开",
-    "11:00 a.m.": "离开",
-    "12:00 a.m.": "离开",
-    "13:00 p.m.": "离开",
-    "14:00 p.m.": "离开",
-    "15:00 p.m.": "离开",
-    "16:00 p.m.": "离开",
-    "17:00 p.m.": "离开"
-  }},
-  "weather":
-  {{
-    "temperature": 26
-  }}
-}}
-
-请遵循以下步骤生成提醒：
-1. 解析数据：从提供的JSON中提取员工信息、活动记录及环境数据。
-2. 身份确认：使用员工ID、姓名、岗位、工位等信息进行识别和个性化称呼。
-3. 久坐、喝水、眼部健康提醒：
- - 如果员连续两个小时都是在线状态，则建议员工起身活动活动走一走，避免久坐，深呼吸，眺望远处或者闭目养神，放松眼睛，短暂休息。
- - 如果当日温度高于28℃，且当前时间为下午，则同时提醒员工喝水，注意及时补水。
-4. 午休提醒：
- 若当前时间属午休时段（如11:30-14:00）且员工状态为“在线”，提示进行20-30分钟小憩。
-5. 环境适应性提醒：
- - 高温（>28℃）：加强补水和防暑提示；
- - 高湿：建议注意通风，调节环境舒适度。
-
-请确保提醒内容简洁、温馨、积极，基于数据合理推断，避免主观假设。
-输出应凝练且易于接受，体现关怀而不显机械。
-当前时间：{current_time}
-"""
+from dotenv import load_dotenv
+from langchain.agents import AgentType, initialize_agent, Tool
+from langchain.prompts import PromptTemplate
+from langchain_deepseek import ChatDeepSeek
 
 
-def generate_health_tips(employee_data):
+# 解析工作状态数据
+def parse_work_status(work_status):
+    parsed_data = {}
+    for day, hours in work_status.items():
+        if day == "seventh":  # 第七天是休息
+            parsed_data[day] = {"status": "休息"}
+            continue
+
+        parsed_hours = {}
+        for hour, info in hours.items():
+            parsed_hours[int(hour)] = {
+                "status": info["status"],
+                "steps": info["steps"]
+            }
+        parsed_data[day] = parsed_hours
+    return parsed_data
+
+def create_message(employee_data:dict):
+    # 全局员工数据
+    '''
+    employee_data = {
+        "employee_info": {
+            "name": "张三",
+            "extension": {
+                "爱好": "篮球",
+                "年龄": "24"
+            },
+            "title": "算法工程师"
+        },
+        "work_status": {
+            "first": {
+                "08": {"status": "签到", "steps": 3000},
+                "09": {"status": "离开", "steps": 2500},
+                "10": {"status": "在线", "steps": 3000},
+                "11": {"status": "在线", "steps": 4500},
+                "12": {"status": "离开", "steps": 6000},
+                "13": {"status": "在线", "steps": 6500},
+                "14": {"status": "在线", "steps": 7000},
+                "15": {"status": "会议", "steps": 7200},
+                "16": {"status": "在线", "steps": 7500},
+                "17": {"status": "在线", "steps": 8500},
+                "18": {"status": "离开", "steps": 9000},
+                "20": {"status": "在线", "steps": 10000}
+            },
+            "second": {
+                "08": {"status": "签到", "steps": 2800},
+                "09": {"status": "在线", "steps": 3200},
+                "10": {"status": "在线", "steps": 3500},
+                "11": {"status": "会议", "steps": 3800},
+                "12": {"status": "离开", "steps": 5200},
+                "13": {"status": "在线", "steps": 5500},
+                "14": {"status": "在线", "steps": 6000},
+                "15": {"status": "离开", "steps": 6200},
+                "16": {"status": "在线", "steps": 6500},
+                "17": {"status": "在线", "steps": 7800},
+                "18": {"status": "签退", "steps": 8200}
+            },
+            "third": {
+                "08": {"status": "签到", "steps": 3100},
+                "09": {"status": "在线", "steps": 3400},
+                "10": {"status": "在线", "steps": 3800},
+                "11": {"status": "在线", "steps": 4200},
+                "12": {"status": "离开", "steps": 5800},
+                "13": {"status": "在线", "steps": 6100},
+                "14": {"status": "会议", "steps": 6300},
+                "15": {"status": "在线", "steps": 6600},
+                "16": {"status": "在线", "steps": 7200},
+                "17": {"status": "在线", "steps": 8500},
+                "18": {"status": "签退", "steps": 9000}
+            },
+            "fourth": {
+                "08": {"status": "签到", "steps": 2900},
+                "09": {"status": "在线", "steps": 3300},
+                "10": {"status": "离开", "steps": 3500},
+                "11": {"status": "在线", "steps": 3900},
+                "12": {"status": "离开", "steps": 5300},
+                "13": {"status": "在线", "steps": 5600},
+                "14": {"status": "在线", "steps": 6200},
+                "15": {"status": "在线", "steps": 6800},
+                "16": {"status": "会议", "steps": 7000},
+                "17": {"status": "在线", "steps": 8300},
+                "18": {"status": "签退", "steps": 8700}
+            },
+            "fifth": {
+                "08": {"status": "签到", "steps": 3200},
+                "09": {"status": "在线", "steps": 3600},
+                "10": {"status": "在线", "steps": 4000},
+                "11": {"status": "会议", "steps": 4300},
+                "12": {"status": "离开", "steps": 5900},
+                "13": {"status": "在线", "steps": 6200},
+                "14": {"status": "在线", "steps": 6700},
+                "15": {"status": "在线", "steps": 7300},
+                "16": {"status": "在线", "steps": 8000},
+                "17": {"status": "在线", "steps": 9200},
+                "18": {"status": "签退", "steps": 9600}
+            },
+            "sixth": {
+                "09": {"status": "签到", "steps": 2500},
+                "10": {"status": "在线", "steps": 2800},
+                "11": {"status": "在线", "steps": 3200},
+                "12": {"status": "离开", "steps": 4500},
+                "13": {"status": "在线", "steps": 4800},
+                "14": {"status": "在线", "steps": 5300},
+                "15": {"status": "签退", "steps": 5600}
+            },
+            "seventh": {
+                "status": "休息"
+            }
+        },
+        "weather": {
+            "Monday": {"temperature": 26, "condition": "晴朗"},
+            "Tuesday": {"temperature": 24, "condition": "多云"},
+            "Wednesday": {"temperature": 28, "condition": "晴朗"},
+            "Thursday": {"temperature": 25, "condition": "小雨"},
+            "Friday": {"temperature": 23, "condition": "阴天"},
+            "Saturday": {"temperature": 22, "condition": "多云"},
+            "Sunday": {"temperature": 20, "condition": "小雨"}
+        }
+    }
+    '''
+
+
+    # 工具函数：获取员工工作状态数据（使用全局数据）
+    def get_work_status(_):
+        return parse_work_status(employee_data["work_status"])
+
+
+    # 工具函数：获取天气数据（使用全局数据）
+    def get_weather_data(_):
+        return employee_data["weather"]
+
+
+    # 工具函数：获取员工基本信息（使用全局数据）
+    def get_employee_info(_):
+        return employee_data["employee_info"]
+
+
     # 获取当前时间
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    def get_current_time(_):
+        return datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    # 准备系统消息，包含当前时间
-    system_msg = system_content.format(current_time=current_time)
 
-    # 将员工数据转换为JSON字符串
-    employee_data_str = json.dumps(employee_data, ensure_ascii=False)
+    # 加载环境变量
+    load_dotenv()
+    deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
 
-    messages = [
-        {
-            "role": "system",
-            "content": system_msg
-        },
-        {
-            "role": "user",
-            "content": f"以下是员工的健康数据，请生成相应的健康提示：\n{employee_data_str}"
-        }
-    ]
+    # 初始化DeepSeek LLM
+    llm = ChatDeepSeek(model="deepseek-chat", api_key=deepseek_api_key)
 
-    try:
-        response = client.chat.completions.create(
-            model="deepseek-chat",
-            messages=messages,
-            stream=False,
-            temperature=1
+    # 定义工具（使用lambda忽略输入参数，直接调用函数）
+    tools = [
+        Tool(
+            name="GetWorkStatus",
+            func=get_work_status,
+            description="获取员工一周内每天各时段的工作状态数据，包括在线、离开、会议、签到、签退等状态和步数信息"
+        ),
+        Tool(
+            name="GetWeatherData",
+            func=get_weather_data,
+            description="获取今天的天气数据，包括温度和天气状况"
+        ),
+        Tool(
+            name="GetEmployeeInfo",
+            func=get_employee_info,
+            description="获取员工的基本信息，包括姓名、职位和个人爱好等"
+        ),
+        Tool(
+            name="GetCurrentTime",
+            func=get_current_time,
+            description="获取当前的日期和时间，格式为YYYY-MM-DD HH:MM"
         )
-
-        ai_response = response.choices[0].message.content
-        return ai_response
-
-    except Exception as e:
-        return f"调用API时出现错误: {e}"
-
-
-# 传入员工数据
-def get_employee_data():
-    employee_data = [
-        {
-            "employee_info": {
-                "name": "张三",
-                "ID": 1001,
-                "age": 28,
-                "workspace": "A101",
-                "position": "技术部",
-                "hobbies": "篮球,阅读"
-            },
-            "check_in_out": {
-                "09:00 a.m.": "在线",
-                "10:00 a.m.": "在线",
-                "11:00 a.m.": "在线",
-                "12:00 p.m.": "离开",
-                "13:00 p.m.": "在线",
-                "14:00 p.m.": "在线",
-                "15:00 p.m.": "在线",
-                "16:00 p.m.": "离开",
-                "17:00 p.m.": "在线"
-            },
-            "weather": {
-                "temperature": 32
-            }
-        },
-        {
-            "employee_info": {
-                "name": "李四",
-                "ID": 1002,
-                "age": 32,
-                "workspace": "B205",
-                "position": "市场部",
-                "hobbies": "摄影,旅行"
-            },
-            "check_in_out": {
-                "09:00 a.m.": "在线",
-                "10:00 a.m.": "离开",
-                "11:00 a.m.": "在线",
-                "12:00 p.m.": "离开",
-                "13:00 p.m.": "在线",
-                "14:00 p.m.": "离开",
-                "15:00 p.m.": "在线",
-                "16:00 p.m.": "在线",
-                "17:00 p.m.": "在线"
-            },
-            "weather": {
-                "temperature": 29
-            }
-        },
-        {
-            "employee_info": {
-                "name": "王五",
-                "ID": 1003,
-                "age": 25,
-                "workspace": "C312",
-                "position": "设计部",
-                "hobbies": "绘画,音乐"
-            },
-            "check_in_out": {
-                "09:00 a.m.": "离开",
-                "10:00 a.m.": "在线",
-                "11:00 a.m.": "在线",
-                "12:00 p.m.": "在线",
-                "13:00 p.m.": "离开",
-                "14:00 p.m.": "在线",
-                "15:00 p.m.": "在线",
-                "16:00 p.m.": "在线",
-                "17:00 p.m.": "离开"
-            },
-            "weather": {
-                "temperature": 26
-            }
-        }
     ]
-    return employee_data
 
+    # 定义提示模板（匹配结构化聊天代理的预期变量）
+    prompt_template = """你是一个员工健康管理助手，需要根据提供的员工工作状态数据、天气数据和当前时间，按照以下规则向员工发送提醒：
 
-if __name__ == "__main__":
-    # 示例员工数据
-    example_employee_data = get_employee_data()
+    1. 久坐提醒：如果员连续两个小时都是在线状态，则建议员工起身活动活动走一走，避免久坐，深呼吸，眺望远处或者闭目养神，放松眼睛，短暂休息。
+    2. 喝水提醒：如果当日温度高于28℃，且当前时间为下午，则同时提醒员工喝水，注意及时补水。
+    3. 午休提醒：若当前时间属午休时段（如11:30-14:00）且员工状态为“在线”，提示进行20-30分钟小憩。
+    4. 日均连续工作时长：若一周内多数天连续在线时长接近或超过3-4小时，且当前时间处于工作时段内，发送提醒
+    5. 夜间/凌晨工作频率：如果一周里有不少天数在晚上22:00后还在线，且当前时间为晚上时，发送提醒
+    6. 休息与早起工作情况：若存在前一天很晚还工作，次日清晨（当前时间）很早又在线的情况，发送提醒
+    7. 规律性休息情况：要是一周内工作日几乎都没有短暂"不在线"的休息时段，且当前时间处于工作时段内，发送提醒
 
-    # 生成健康提示
-    health_tips = generate_health_tips(example_employee_data)
-    print("健康提示：")
-    print(health_tips)
+    请根据获取到的员工{employee_name}的工作状态数据、天气数据和当前时间{current_time}，分析并判断需要发送哪些提醒。请直接给出提醒内容，不需要解释分析过程。
 
+    可用工具:
+    {tools}
 
-# 输出结果：
-# 健康提示：
-# 张三（技术部/A101），注意到您从9点到11点连续在线工作，建议起身活动一下，深呼吸或远眺放松眼睛。今日气温较高（32℃），请多喝水防暑降温哦！
+    如果已经获取了足够的信息，请直接生成提醒内容。如果需要更多信息，请使用工具获取。
 
-# 李四（市场部/B205），您下午3点至5点持续在岗，记得适当起身走动，避免久坐。今天温度29℃，午后炎热，请及时补水，保持水分充足～
+    思考过程:
+    1. 首先获取当前时间、员工的工作状态数据和天气数据
+    2. 根据当前时间判断所处时段和对应的日期
+    3. 逐一检查各项提醒规则是否满足当前时间条件，结合每个员工的具体信息，生成个性化的提醒：
+    - 比如员工的具体岗位是产品经理，或者HR，或者算法工程师，考虑到员工的身份，根据特定的职业输出特定的提醒。
+    - 结合员工的年龄、兴趣爱好信息，进行个性化提醒。
+    4. 汇总所有需要发送的提醒
 
-# 王五（设计部/C312），您下午2点到4点连续工作未休息，建议短暂活动放松肩颈，眺望远处缓解眼部疲劳。温度适中，保持通风更舒适！
+    {agent_scratchpad}
+    """
+
+    # 创建提示（使用代理所需的标准变量）
+    prompt = PromptTemplate(
+        template=prompt_template,
+        input_variables=["tools", "agent_scratchpad", "input"]
+    )
+
+    # 初始化Agent
+    agent = initialize_agent(
+        tools,
+        llm,
+        agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+        verbose=True,
+        prompt=prompt
+    )
+
+    # 准备输入信息
+    employee_name = employee_data["employee_info"]["name"]
+    current_time = get_current_time(None)
+    input_text = f"请根据当前时间{current_time}、员工{employee_name}的工作和天气数据，判断并生成即时健康提醒"
+
+    # 运行Agent
+    reminders = agent.invoke(input_text)
+
+    print(f"[{current_time}] 需要发送的提醒：")
+    return reminders["output"]

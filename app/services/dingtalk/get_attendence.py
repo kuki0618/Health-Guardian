@@ -1,5 +1,15 @@
-from core.config import CronTrigger,IntervalTrigger,BackgroundScheduler,FastAPI,HTTPException,BaseModel,Optional,httpx,datetime,timedelta,get_dingtalk_access_token,List
-import time as time_module
+from fastapi import FastAPI
+from pydantic import BaseModel
+import asyncio
+from typing import Optional, List, Dict, Any
+import httpx
+import datetime
+from datetime import time, timedelta
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.cron import CronTrigger
+
+from dependencies.dingtalk_token import get_dingtalk_access_token
 
 app = FastAPI(title="¶¤¶¤¿¼ÇÚAPI", version="1.0.0")
 

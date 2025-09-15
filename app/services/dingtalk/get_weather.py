@@ -43,15 +43,13 @@ def get_amap_weather(amap_api_key, city="北京", extensions="all"):
                 "更新时间": weather_data["lives"][0]["reporttime"]
             }
         }
-        result_json = json5.dumps(result, ensure_ascii=False)
-        return result_json
+        return result
 
     except Exception as e:
         return f"获取天气数据失败：{str(e)}"
 
 
 if __name__ == "__main__":
-    AMAP_API_KEY = "d10ec8ed5659cf8d930ed3752b47efb5"
     # 获取天气数据
     weather_info = get_amap_weather(AMAP_API_KEY, city="江苏", extensions="all")
 

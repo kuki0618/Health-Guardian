@@ -3,6 +3,20 @@ import time as time_module
 
 app = FastAPI(title="钉钉考勤API", version="1.0.0")
 
+def reschedule_data(data:dict):
+    flat_data_list = []
+    for item in data['recordresult']:
+        userCheckTime = timestamp_to_datetime(item['userCheckTime'])
+        flat_data = {
+            # 第一层数据
+            'userid': item["userId"],
+            'date':userCheckTime.strftime("%Y-%m-%d"),
+            "datetime":userCheckTime.strftime("%Y-%m-%d %H:%M:%S"),
+            'checkType':item['checkType'],
+        }  
+        flat_data_list.append(flat_data)
+    return flat_data_list
+
 def datetime_to_timestamp(dt: datetime.datetime) -> int:
     """datetime转时间戳(毫秒)"""
     return int(dt.timestamp() * 1000)
@@ -42,9 +56,8 @@ class AttendanceManager:
             
             # 检查是否在签到时段且未签到
             in_checkin_period = self._is_in_time_period(8, 12)
-            already_checked_in = self.daily_status[today][userid]['checked_in']
             
-            return in_checkin_period and not already_checked_in
+            return in_checkin_period 
     
     async def should_check_out(self, userid: str) -> bool:
         """检查是否应该执行签退"""
@@ -58,10 +71,9 @@ class AttendanceManager:
                 self.daily_status[today][userid] = {'checked_in': False, 'checked_out': False}
             
             # 检查是否在签退时段且未签退
-            in_checkout_period = self._is_in_time_period(18, 20)
-            already_checked_out = self.daily_status[today][userid]['checked_out']
+            in_checkout_period = self._is_in_time_period(18, 20) 
             
-            return in_checkout_period and not already_checked_out
+            return in_checkout_period 
     
     async def mark_checked_in(self, userid: str):
         """标记为已签到"""
@@ -94,7 +106,7 @@ class AttendanceRequest(BaseModel):
     size: int = 50
 
 class recordResult(BaseModel):
-    userCheckTime:str
+    userCheckTime:int
     checkType:str
     userId:str
 
@@ -136,19 +148,12 @@ async def process_attendance_for_user(userid:str):
             response.raise_for_status()
             response = response.json()
             if data["recordresult"]:
-                record = data["recordresult"][0]
-                '''
-                final = {
-                "success":response["success"],
-                "checkin_time":response["result"]["checkin_time"],
-                "detail_place":response["result"]["detail_place"],
-                }
+                data = reschedule_data(data)
                 return {
                     "action_taken": True,
                     "checked":True,
-                    "result": response
+                    "data": data
                 }
-                '''
             else:
                 return {
                     "action_taken": True,

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Query
 from typing import List, Optional, Dict, Any
 from core import database
+from datetime import datetime
 
 app = FastAPI()
 
@@ -60,7 +61,7 @@ async def get_item_by_id(
     
     if not row:
         raise HTTPException(status_code=404, detail="Item not found")
-    return row.json()
+    return row
 
 # 查询某个表的所有主键值
 @app.get("/{table_name}/values")
@@ -219,6 +220,111 @@ async def insert_online_item(
         return {"message": "Item created", "id": cursor.lastrowid}
     return {"message": "Item created"}
     '''
+#获取指定员工和日期的在线时间段数据
+def get_online_time_periods(
+        userid: str, 
+        father_table_name: str,
+        son_table_name:str,
+        target_date: str,
+        conn = Depends(database.get_db)) -> List[Dict[str, Any]]:
+        
+        cursor = conn.cursor(dictionary=True)
+        
+        # 查询主表获取attendance_id
+        query_main = f"""
+        SELECT id FROM {father_table_name} 
+        WHERE userid = %s AND date = %s
+        """
+        cursor.execute(query_main, (userid, target_date))
+        main_record = cursor.fetchone()
+        
+        if not main_record:
+            print(f"未找到员工 {userid} 在 {target_date} 的记录")
+            return []
+        
+        attendance_id = main_record['id']
+        
+        # 查询时间段子表
+        query_periods = f"""
+        SELECT start_datetime, end_datetime 
+        FROM {son_table_name} 
+        WHERE attendance_id = %s 
+        ORDER BY start_datetime
+        """
+        cursor.execute(query_periods, (attendance_id,))
+        time_periods = cursor.fetchall()
+        
+        return time_periods
+
+#插入健康提醒数据到提醒表
+async def insert_health_msg(
+    user_id: str,
+    msg:str,
+    Time:datetime,
+    conn = Depends(database.get_db)
+):
+    cursor = conn.cursor(dictionary=True)
+    date = Time.strftime("%Y-%m-%d")
+
+    # 第一步：插入主表 online_status，获取attendance_id
+    insert_main_query = f"""
+    INSERT INTO online_status (userid, date) 
+    VALUES (%s, %s)
+    """
+    cursor.execute(insert_main_query, (user_id, date))
+    
+    # 获取刚插入的主键ID
+    main_id = cursor.lastrowid
+    time = Time.strftime("%Y-%m-%d %H:%M:%S")
+
+    # 第二步：插入子表 online_time_periods
+    insert_period_query = f"""
+    INSERT INTO health_msg (msg_id,data_time,msg) 
+    VALUES (%s, %s, %s)
+    """
+    cursor.execute(insert_period_query, (main_id, time, msg))
+
+    # 提交事务
+    conn.commit()
+'''
+if cursor.lastrowid:
+    return {"message": "Item created", "id": cursor.lastrowid}
+return {"message": "Item created"}
+'''
+#插入签到数据到相关表
+def add_attendence_info(
+        all_data:List[dict],
+        conn = Depends(database.get_db)
+        ):
+    cursor = conn.cursor(dictionary=True)
+    for data in all_data:
+        user_id = data['user_id']
+        date = data['date']
+
+        # 第一步：插入主表 online_status，获取attendance_id
+        insert_main_query = f"""
+        INSERT INTO online_status (userid, date) 
+        VALUES (%s, %s)
+        """
+        cursor.execute(insert_main_query, (user_id, date))
+        
+        # 获取刚插入的主键ID
+        main_id = cursor.lastrowid
+
+        time = data['datetime']
+        checkType = data['checkType']
+        # 第二步：插入子表 online_time_periods
+        insert_period_query = f"""
+        INSERT INTO attendence_data (task_id,userCheckTime,checkType) 
+        VALUES (%s, %s, %s)
+        """
+        cursor.execute(insert_period_query, (main_id, time, checkType))
+
+        # 提交事务
+    conn.commit()
+    
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

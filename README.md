@@ -1,19 +1,154 @@
-# HealthGuardian
+# HealthGuardian 
 
-ä¸€ä¸ªâ€œäº‹ä»¶é©±åŠ¨ + è§„åˆ™å¼•æ“Ž + LLM æ¶¦è‰²â€ çš„åŠžå…¬å¥åº·è¾…åŠ©æœåŠ¡ï¼šé‡‡é›†ï¼ˆä¹…å / å–æ°´ / çŽ¯å¢ƒ / ä¸»è§‚çŠ¶æ€ï¼‰â†’ èšåˆåˆ†æž â†’ ç»“æž„åŒ–å»ºè®® â†’ å¤§æ¨¡åž‹ç”Ÿæˆè‡ªç„¶è¯­è¨€æé†’ â†’ é’‰é’‰æŽ¨é€ & ç”¨æˆ·åé¦ˆé—­çŽ¯ã€‚
+Ò»¸ö»ùÓÚ"ÊÂ¼þÇý¶¯ + ¹æÔòÒýÇæ + LLM ÈóÉ«"µÄ°ì¹«½¡¿µ¸¨Öú·þÎñ£¬Í¨¹ý·ÖÎöÓÃ»§Ç©µ½¡¢ÔÚÏß×´Ì¬¡¢ÈÕ³Ì¡¢²½ÊýºÍÌìÆøµÈÐÅÏ¢£¬Ìá¹©¸öÐÔ»¯µÄ½¡¿µÌáÐÑ¡£
 
-## å¼€å‘ï¼š
-è¯·æ–°å»ºè‡ªå·±çš„`dev_{username}`åˆ†æ”¯è¿›è¡Œå¼€å‘ï¼Œå®ŒæˆåŽå‘èµ· PR åˆå¹¶åˆ° `dev`åˆ†æ”¯ï¼Œ`dev`åˆ†æ”¯æµ‹è¯•é€šè¿‡åŽå†åˆå¹¶åˆ°`master`åˆ†æ”¯ï¼ˆå½“ç„¶çŽ°åœ¨æš‚æ—¶æ²¡æœ‰å®Œæ•´çš„å…¨åŠŸèƒ½ä»£ç ï¼Œ`master`åˆ†æ”¯ä¼šä¸å®šæœŸé•œåƒ`dev`åˆ†æ”¯ï¼‰ã€‚
+> »ùÓÚ FastAPI + DeepSeek + LangChain + MySQL µÄ¼¼ÊõÕ»ÊµÏÖ
 
-é¡¹ç›®æž¶æž„ï¼š
+---
 
-- server
-  - app                  FastAPI ä¸»åº”ç”¨
-	- api                FastAPI åŽç«¯æŽ¥å£
-	- scheduler          å®šæ—¶ä»»åŠ¡
-	- services           å„ç§æœåŠ¡ï¼ˆé’‰é’‰ã€LLMã€è§„åˆ™å¼•æ“Žç­‰ï¼Œè°ƒç”¨å¤§è¯­è¨€æ¨¡åž‹åœ¨æ­¤å¤„è°ƒç”¨ï¼‰
-	- repositories       æ•°æ®ä»“åº“(æ•°æ®åº“æŽ¥å£ï¼Œä½¿ç”¨`C#`å­æ¨¡å—é€šè¿‡`pythonnet`è°ƒç”¨)
-	- utils              å·¥å…·ç±»
-	- core               æ ¸å¿ƒé…ç½®ã€æ—¥å¿—ç­‰
-  - tests                æµ‹è¯•ä»£ç 
-  - scripts              ç”Ÿæˆå‡æ•°æ®è„šæœ¬ç­‰å…¶å®ƒå·¥å…·è„šæœ¬
+## ? ºËÐÄ¼ÛÖµ
+
+- **ÖÇÄÜÊ±»úÅÐ¶Ï**£º½áºÏÓÃ»§ÈÕ³Ì±í£¬Ö»ÔÚºÏÊÊÊ±¼ä·¢ËÍÌáÐÑ
+- **¸öÐÔ»¯ÄÚÈÝ**£º»ùÓÚ²½Êý¡¢ÌìÆø¡¢Ê±¼äÔçÍíºÍÓÃ»§Ï²ºÃÉú³ÉÌáÐÑ
+- **¶àÔ´Êý¾ÝÈÚºÏ**£ºÕûºÏÇ©µ½¡¢ÔÚÏß×´Ì¬¡¢ÈÕ³Ì¡¢ÔË¶¯¡¢ÌìÆøÊý¾Ý
+- **LLMÈóÉ«ÓÅ»¯**£ºÊ¹ÓÃDeepSeekÄ£ÐÍÈÃÌáÐÑ¸ü×ÔÈ»ÓÑºÃ
+
+## ? Êý¾ÝÔ´ËµÃ÷
+
+| Êý¾ÝÔ´ | »ñÈ¡ÆµÂÊ | ÓÃÍ¾ |
+|--------|----------|------|
+| Ç©µ½ÐÅÏ¢ | ÊµÊ± | ÅÐ¶ÏÓÃ»§ÔÚ¸Ú×´Ì¬ |
+| ÔÚÏß×´Ì¬ | Ã¿2Ð¡Ê± | ¼ì²â¾Ã×øÐÐÎª |
+| ÈÕ³Ì±í | Ã¿ÈÕÍ¬²½ | ÅÐ¶ÏÊÇ·ñÊÊºÏ·¢ËÍÌáÐÑ |
+| ÔË¶¯²½Êý | Ã¿ÈÕÍ¬²½ | ¸öÐÔ»¯»î¶¯½¨Òé |
+| ÌìÆøÐÅÏ¢ | Ã¿3Ð¡Ê± | »·¾³ÊÊÓ¦ÐÔÌáÐÑ |
+
+## ? ´¦ÀíÁ÷³Ì
+
+1. **Êý¾Ý²É¼¯** ¡ú ¶¨Ê±´Ó¶¤¶¤API»ñÈ¡¶àÔ´Êý¾Ý
+2. **¾Ã×ø¼ì²â** ¡ú Ã¿2Ð¡Ê±·ÖÎöÓÃ»§»î¶¯×´Ì¬
+3. **Çé¾³ÅÐ¶Ï** ¡ú ½áºÏÈÕ³Ì±í¾ö¶¨ÊÇ·ñ·¢ËÍ
+4. **¸öÐÔ»¯Éú³É** ¡ú »ùÓÚÓÃ»§ÉÏÏÂÎÄÉú³É½¨Òé
+5. **LLMÈóÉ«** ¡ú Ê¹ÓÃDeepSeekÓÅ»¯ÌáÐÑÎÄ°¸
+6. **ÏûÏ¢ÍÆËÍ** ¡ú Í¨¹ý¶¤¶¤¹¤×÷Í¨Öª·¢ËÍ
+7. **·´À¡´¦Àí** ¡ú ÊÕ¼¯ÓÃ»§»¥¶¯·´À¡
+
+## ?? ºËÐÄÊý¾Ý±í
+
+```sql
+-- ÓÃ»§×´Ì¬±í£¨´æ´¢ÔÚÏß×´Ì¬¼ì²â½á¹û£©
+CREATE TABLE user_status (
+    user_id VARCHAR(64),
+    status_time TIMESTAMP,
+    is_active BOOLEAN,
+    device_type VARCHAR(32)
+);
+
+-- ÈÕ³Ì±í£¨»áÒéºÍÈÎÎñ°²ÅÅ£©
+CREATE TABLE schedules (
+    user_id VARCHAR(64),
+    schedule_time TIMESTAMP,
+    title VARCHAR(255),
+    is_busy BOOLEAN  -- ÊÇ·ñÖØÒªÈÕ³Ì
+);
+
+-- ÌáÐÑ¼ÇÂ¼±í
+CREATE TABLE health_reminders (
+    user_id VARCHAR(64),
+    reminder_time TIMESTAMP,
+    reminder_type VARCHAR(64),
+    content TEXT,
+    status VARCHAR(32)
+);
+```
+
+## ?? ÏµÍ³ÅäÖÃ
+
+### »·¾³±äÁ¿
+```bash
+# ¶¤¶¤ÅäÖÃ
+DINGTALK_APP_KEY=your_app_key
+DINGTALK_APP_SECRET=your_app_secret
+
+# DeepSeekÅäÖÃ
+DEEPSEEK_API_KEY=your_api_key
+
+# Êý¾Ý¿âÅäÖÃ
+DATABASE_URL=mysql://user:pass@localhost/db
+```
+
+### Ö÷Òª²ÎÊý
+```python
+# ¾Ã×ø¼ì²âãÐÖµ£¨·ÖÖÓ£©
+SEDENTARY_THRESHOLD = 120
+
+# ÌáÐÑÀäÈ´Ê±¼ä£¨·ÖÖÓ£©
+REMINDER_COOLDOWN = 30
+
+# LLMµ÷ÓÃ³¬Ê±£¨Ãë£©
+LLM_TIMEOUT = 10
+```
+
+## ? ²¿ÊðÔËÐÐ
+
+1. **°²×°ÒÀÀµ**
+```bash
+pip install fastapi uvicorn mysql-connector-python langchain
+```
+
+2. **Æô¶¯·þÎñ**
+```bash
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+3. **ÅäÖÃ¶¨Ê±ÈÎÎñ**
+```bash
+# Ã¿2Ð¡Ê±Ö´ÐÐ¾Ã×ø¼ì²â
+0 */2 * * * curl -X POST http://localhost:8000/check-sedentary
+```
+
+## ? ¼à¿ØÖ¸±ê
+
+| Ö¸±êÃû³Æ | ¼à¿Ø·½Ê½ | Ô¤ÆÚÄ¿±ê |
+|----------|----------|----------|
+| ¾Ã×ø¼ì²â×¼È·ÂÊ | ÈÕÖ¾·ÖÎö | >90% |
+| ÌáÐÑ½ÓÊÜÂÊ | ·´À¡Í³¼Æ | >70% |
+| APIÏìÓ¦Ê±¼ä | ÐÔÄÜ¼à¿Ø | <200ms |
+| LLMµ÷ÓÃ³É¹¦ÂÊ | ´íÎóÈÕÖ¾ | >95% |
+
+## ? ºËÐÄ¹¦ÄÜÄ£¿é
+
+### 1. ¾Ã×ø¼ì²â·þÎñ
+- Ã¿2Ð¡Ê±¼ì²éÓÃ»§ÔÚÏß×´Ì¬
+- ½áºÏÈÕ³Ì±íÅÐ¶Ï·¢ËÍÊ±»ú
+- ±ÜÃâ»áÒéÆÚ¼ä´òÈÅÓÃ»§
+
+### 2. ¸öÐÔ»¯ÌáÐÑÉú³É
+- »ùÓÚ²½ÊýÍÆ¼ö»î¶¯Ç¿¶È
+- ¸ù¾ÝÌìÆøµ÷Õû½¨ÒéÄÚÈÝ
+- ¿¼ÂÇÊ±¼äÔçÍíÒòËØ
+
+### 3. LLMÈóÉ«·þÎñ
+- Ê¹ÓÃDeepSeekÓÅ»¯ÎÄ°¸
+- ±£³Ö×¨ÒµÇÒÓÑºÃµÄÓïÆø
+- ¿ØÖÆÉú³É³¤¶ÈÊÊÖÐ
+
+### 4. ·´À¡´¦Àí»úÖÆ
+- ÊÕ¼¯ÓÃ»§ÕýÃæ/¸ºÃæ·´À¡
+- ÓÅ»¯ºóÐøÌáÐÑ²ßÂÔ
+- Í³¼Æ½ÓÊÜÂÊÖ¸±ê
+
+## ? ÌØÉ«¹¦ÄÜ
+
+1. **ÖÇÄÜÃâ´òÈÅ**£º×Ô¶¯Ê¶±ð»áÒéÊ±¶Î£¬±ÜÃâÖØÒªÊ±¶Î·¢ËÍÌáÐÑ
+2. **ÌìÆøÊÊÓ¦ÐÔ**£º¸ù¾ÝÌìÆø×´¿öµ÷Õû»î¶¯½¨Òé£¨ÊÒÄÚ/ÊÒÍâ£©
+3. **½ø¶È¸ÐÖª**£º»ùÓÚµ±ÈÕ²½ÊýÌá¹©¸öÐÔ»¯ÔË¶¯½¨Òé
+4. **Ê±¶ÎÓÅ»¯**£ºÔçÍí²»Í¬·ç¸ñµÄÌáÐÑÎÄ°¸
+
+## ? ÊµÊ©¼Æ»®
+
+1. **µÚÒ»½×¶Î**£ºÊµÏÖ»ù´¡Êý¾Ý²É¼¯ºÍ¾Ã×ø¼ì²â
+2. **µÚ¶þ½×¶Î**£º¼¯³ÉDeepSeek½øÐÐÎÄ°¸ÓÅ»¯
+3. **µÚÈý½×¶Î**£ºÌí¼ÓÓÃ»§·´À¡ºÍ¸öÐÔ»¯Ñ§Ï°
+4. **µÚËÄ½×¶Î**£ºÍêÉÆ¼à¿ØºÍ±¨±í¹¦ÄÜ
+

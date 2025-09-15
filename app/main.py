@@ -160,3 +160,21 @@ def conditional_status(userids: List[str]):
 
             
             
+'''
+                        "employee_info":{"userid":"manager4585","name":小赵,"title":"算法工程师","hobby":"散步",“age”:"25"},
+                        "weather":{
+                        "温度(℃)": weather_data["lives"][0]["temperature"],
+                        "天气状况": weather_data["lives"][0]["weather"],
+                        "湿度(%)": weather_data["lives"][0]["humidity"],
+                        "风力": weather_data["lives"][0]["windpower"],
+                        }
+                        "work_status":{
+                            "2023-10-01": [
+                                ("2023-10-01 09:00:00", "2023-10-01 12:00:00"),
+                                ("2023-10-01 14:00:00", "2023-10-01 18:00:00")
+                            ],
+                            "2023-10-02": [
+                                ("2023-10-02 08:30:00", "2023-10-02 17:30:00")
+                            ]
+                        }  
+                        '''

@@ -1,7 +1,14 @@
+import os
+import sys
 from fastapi import FastAPI,HTTPException
-from dependencies.dingtalk_token import get_dingtalk_access_token
 
 app = FastAPI()
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+app_dir = os.path.dirname(current_dir) 
+sys.path.insert(0, app_dir)  
+from dependencies.dingtalk_token import get_dingtalk_access_token
+
 
 @app.get("/test-token")
 async def test_token():

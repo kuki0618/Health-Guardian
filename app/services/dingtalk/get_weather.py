@@ -34,24 +34,15 @@ def get_amap_weather(amap_api_key, city="北京", extensions="all"):
 
         # 提取关键数据（实时天气+7天预报，按需简化）
         result = {
-            "城市": weather_data["lives"][0]["city"] if "lives" in weather_data else city,
-            "实时天气": {
                 "温度(℃)": weather_data["lives"][0]["temperature"],
                 "天气状况": weather_data["lives"][0]["weather"],
                 "湿度(%)": weather_data["lives"][0]["humidity"],
                 "风力": weather_data["lives"][0]["windpower"],
-                "更新时间": weather_data["lives"][0]["reporttime"]
-            }
         }
         return result
 
     except Exception as e:
         return f"获取天气数据失败：{str(e)}"
-
-
-if __name__ == "__main__":
-    # 获取天气数据
-    weather_info = get_amap_weather(AMAP_API_KEY, city="江苏", extensions="all")
 
     #print("高德地图获取的天气数据：")
     #print(json5.dumps(weather_info, indent=2, ensure_ascii=False))

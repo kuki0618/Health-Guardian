@@ -5,7 +5,6 @@ import httpx
 import json
 from dependencies.dingtalk_token import get_dingtalk_access_token
 
-#os.environ['PYTHONIOENCODING'] = 'utf-8'
 app = FastAPI(title="API", version="1.0.0")
 
 class UserIdRequest(BaseModel):
@@ -53,7 +52,8 @@ async def get_user_details(userid:str):
             if "extension" in response["result"]:
                 extension_data = response["result"].pop("extension")  # 删除extension并获取其内容
                 response["result"].update(extension_data)  # 将extension内容合并到result中
-
+            #response["hobby"] = response["result"].get("爱好", "")
+            #response["age"] = response["result"].get("年龄", "")
             return response
     except httpx.HTTPStatusError as e:
         print(f"http error: {e.response.status_code},{e.response.text}")

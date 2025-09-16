@@ -1,11 +1,13 @@
+# -*- coding: utf-8 -*-
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any
 import httpx
+from datetime import date
 
 from dependencies.dingtalk_token import get_dingtalk_access_token
 
-app = FastAPI(title="钉钉运动步数查询服务")
+app = FastAPI(title="service")
 
 # 数据模型
 class StepInfo(BaseModel):
@@ -21,9 +23,6 @@ async def fetch_user_steps(
     stat_date: str,
     type:int=0,
 ) -> Dict[str, Any]:
-    """
-    获取个人钉钉运动步数
-    """
     access_token = await get_dingtalk_access_token()
     api_url = "https://api.dingtalk.com/v1.0/contact/users/steps/statistics/query"
     params = {"accessToken": access_token}
@@ -37,9 +36,9 @@ async def fetch_user_steps(
             response.raise_for_status()
             return response.json()
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=f"API请求失败: {e}")
+        raise HTTPException(status_code=e.response.status_code, detail=f"API query fail: {e}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"请求异常: {e}")
+        raise HTTPException(status_code=500, detail=f"API query fail: {e}")
     
 #外部函数示例
 async def get_sport_info(user_id:str):

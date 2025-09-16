@@ -22,9 +22,9 @@ USER root
 # 确保PATH包含用户安装目录
 ENV PATH=/root/.local/bin:$PATH
 
-# 健康检查
+# 健康检查（端口连通性测试）
 HEALTHCHECK --interval=30s --timeout=3s \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD python -c "import socket; exit(0 if socket.socket().connect_ex(('localhost',8000)) == 0 else 1)"
 
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

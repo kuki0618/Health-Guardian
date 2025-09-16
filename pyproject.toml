@@ -1,0 +1,76 @@
+# 构建系统配置
+[build-system]
+# 指定构建所需的依赖
+requires = ["setuptools>=42", "wheel"]
+# 指定构建后端
+build-backend = "setuptools.build_meta"
+
+# 项目元信息配置
+[project]
+# 项目名称
+name = "health-guardian"
+# 项目版本号
+version = "0.1.0"
+# 项目描述
+description = "An intelligent office assistant combining attendance, health status and LLM roles"
+# 作者信息
+authors = [
+    {name = "Your Name", email = "your.email@example.com"},
+]
+# 项目README文件
+readme = "README.md"
+# Python版本要求
+requires-python = ">=3.8"
+# PyPI分类器
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+# 项目依赖项配置
+dependencies = [
+    # Web框架
+    "fastapi>=0.104.1",
+    # ASGI服务器
+    "uvicorn[standard]>=0.24.0",
+    # ORM工具
+    "sqlmodel>=0.0.11",
+    # MySQL驱动
+    "pymysql>=1.1.0",
+    # HTTP请求库
+    "requests>=2.31.0",
+    # 异步HTTP客户端
+    "httpx>=0.25.2",
+    # 任务调度
+    "apscheduler>=3.10.4",
+    # 环境变量管理
+    "python-dotenv>=1.0.0",
+    # 配置管理
+    "pydantic-settings>=2.1.0",
+    # 日期时间处理
+    "python-dateutil>=2.8.2",
+    # 表单解析支持
+    "python-multipart>=0.0.6",
+    # LLM集成框架
+    "langchain>=0.1.0",  # 基于README.md添加
+]
+
+# 可选依赖项配置（开发环境）
+[project.optional-dependencies]
+dev = [
+    # 测试框架
+    "pytest>=7.0",
+    # 代码格式化工具
+    "black>=23.0",
+    # 导入排序工具
+    "isort>=5.0",
+    # 静态类型检查
+    "mypy>=1.0",
+]
+
+# 项目URL配置
+[project.urls]
+# 项目主页
+Homepage = "https://example.com"
+# 代码仓库地址
+Repository = "https://github.com/yourusername/health-guardian"

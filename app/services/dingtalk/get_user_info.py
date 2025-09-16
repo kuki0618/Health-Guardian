@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 import httpx
@@ -41,11 +42,12 @@ async def get_user_details(userid:str):
             response.raise_for_status()
             #从JSON字符串转换为Python字典/对象
             response = response.json()
-            if "extension" in data["result"]:
-                extension_data = data["result"].pop("extension")  # 删除extension并获取其内容
-                data["result"].update(extension_data)  # 将extension内容合并到result中
-            data["hobby"] = data["result"].pop("爱好")
-            data["age"] = data["result"].pop("年龄")
+            if "extension" in response["result"]:
+                extension_data = response["result"].pop("extension")  # 删除extension并获取其内容
+                response["result"].update(extension_data)  # 将extension内容合并到result中
+            response["result"]["hobby"] = response["result"].pop("爱好")
+            response["result"]["age"] = response["result"].pop("年龄")
+            return response
         except httpx.HTTPStatusError as e:  
             if e.response.status_code == 404:
                 raise HTTPException(status_code=404, detail="用户不存在")

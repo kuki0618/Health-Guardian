@@ -1,26 +1,31 @@
 from fastapi import FastAPI
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from .services.dingtalk import get_user_info,get_attendence,get_ifFree,get_schedule_list,get_sport_info,get_weather,send_message
-from .repository import action
-from .services.dingtalk import send_message 
-from .utils.change_time_format import change_time_format
+from app.services.dingtalk import get_user_info, get_attendence, get_ifFree, get_schedule_list, get_sport_info, get_weather, send_message
+from app.repository import action
+from app.utils.change_time_format import change_time_format
+from typing import List
+from datetime import datetime
+
+class AttendanceManager:
+    def __init__(self):
+        self.daily_status = {}
 app = FastAPI()
 
 attendance_manager = AttendanceManager()
 AMAP_API_KEY = "d10ec8ed5659cf8d930ed3752b47efb5"
 
-# ´´½¨Á½¸öµ÷¶ÈÆ÷ÊµÀı
+# ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½
 scheduler_status = AsyncIOScheduler()
 scheduler_attendance = AsyncIOScheduler()
 
-# È«¾Ö´æ´¢ÓÃ»§Êı¾İ
+# È«ï¿½Ö´æ´¢ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½
 user_data = []
 @app.on_event("startup")
 async def startup_event():
     global user_data
     
-    # µÚÒ»²½£ºÏÈ»ñÈ¡ËùÓĞÓÃ»§Êı¾İ
+    # ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½È»ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½
     userids = ["manager4585","604157341328085868","03366627182021511253"]
     user_data = []
     
@@ -29,27 +34,27 @@ async def startup_event():
         user_data.append(result)
         action.create_item(table_name="employees",item=result)
     
-    print(f"³É¹¦»ñÈ¡ {len(user_data)} ¸öÓÃ»§Êı¾İ")
+    print(f"ï¿½É¹ï¿½ï¿½ï¿½È¡ {len(user_data)} ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½")
     
-    # µÚ¶ş²½£ºÓÃ»§Êı¾İ¾ÍĞ÷ºó£¬ÔÙÆô¶¯¶¨Ê±ÈÎÎñ
+    # ï¿½Ú¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½İ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
     
-    # Æô¶¯×´Ì¬¼ì²éµ÷¶ÈÆ÷
+    # ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     scheduler_status.add_job(
         conditional_status,
         trigger=IntervalTrigger(hours=1),
         replace_existing=True,
-        args=[userids]  # ¹Ø¼ü£º´«µİÓÃ»§Êı¾İ¸øÈÎÎñº¯Êı
+        args=[userids]  # ï¿½Ø¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½İ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     )
     
     if not scheduler_status.running:
         scheduler_status.start()
     
-    # Æô¶¯¿¼ÇÚ¼ì²éµ÷¶ÈÆ÷
+    # ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     scheduler_attendance.add_job(
         conditional_attendance,
         trigger=IntervalTrigger(hours=1),
         replace_existing=True,
-        args=[userids]  # ¹Ø¼ü£º´«µİÓÃ»§Êı¾İ¸øÈÎÎñº¯Êı
+        args=[userids]  # ï¿½Ø¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½İ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     )
     
     if not scheduler_attendance.running:
@@ -67,38 +72,45 @@ def conditional_attendance(userids:List[str]):
         if get_attendence.attendance_manager.should_check_in(userid):
             result = get_attendence.process_attendance_for_user(userid)
             if result["action_taken"] and result["checked"]:
-            #ÔÚÔ­º¯ÊıÖĞ·µ»ØĞÅÏ¢±ê×¢ºÃÇ©µ½»¹ÊÇÇ©ÍË£¬µ«ÊÇ¶¼Ğ´ÔÚÒ»¸ö±íÀï
+            #ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½Ğ·ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½×¢ï¿½ï¿½Ç©ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç©ï¿½Ë£ï¿½ï¿½ï¿½ï¿½Ç¶ï¿½Ğ´ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                 action.add_attendence_info(result["data"])
                 get_attendence.attendance_manager.mark_checked_in(userid)
         elif get_attendence.attendance_manager.should_check_out(userid):
             result = get_attendence.process_attendance_for_user(userid)
             if result["action_taken"] and result["checked"]:
-            #ÔÚÔ­º¯ÊıÖĞ·µ»ØĞÅÏ¢±ê×¢ºÃÇ©µ½»¹ÊÇÇ©ÍË£¬µ«ÊÇ¶¼Ğ´ÔÚÒ»¸ö±íÀï
+            #ï¿½ï¿½Ô­ï¿½ï¿½ï¿½ï¿½ï¿½Ğ·ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½×¢ï¿½ï¿½Ç©ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç©ï¿½Ë£ï¿½ï¿½ï¿½ï¿½Ç¶ï¿½Ğ´ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
                 action.add_attendence_info(result["data"])
                 get_attendence.attendance_manager.mark_checked_out(userid)
 
 def conditional_status(userids: List[str]):
     for userid in userids:
-        #Èç¹ûÓÃ»§ÒÑ¾­Ç©µ½µ«ÊÇÃ»ÓĞÇ©ÍË£¬ÄÇÃ´¾Í²éÑ¯ÓÃ»§ÊÇ·ñÔÚÏß
+        #ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Ñ¾ï¿½Ç©ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Ç©ï¿½Ë£ï¿½ï¿½ï¿½Ã´ï¿½Í²ï¿½Ñ¯ï¿½Ã»ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½
         if attendance_manager.daily_status[userid]["checked_in"] == True and attendance_manager.daily_status[userid]["checked_out"] == False:
             result = get_ifFree.get_user_free_busy_status(userid)
-            #Èç¹ûÔÚÏß£¬ÄÇÃ´¾Í²åÈëÊı¾İ
+            #ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ß£ï¿½ï¿½ï¿½Ã´ï¿½Í²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             if len(result)!=0:
                 action.insert_online_item(father_table_name="online_status",son_table_name="online_time_periods",data_list=result)
-                #Èç¹ûÓÃ»§ÔÚÏßÊ±¼ä³¬¹ı90·ÖÖÓ£¬ÄÇÃ´¾Í·¢ËÍÏûÏ¢
+                #ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ä³¬ï¿½ï¿½90ï¿½ï¿½ï¿½Ó£ï¿½ï¿½ï¿½Ã´ï¿½Í·ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
                 if change_time_format(result["start_time"],result["end_time"])>90 * 60:
                     user_msg = action.get_item_by_id(userid,timeable = "employees")
                     whether_msg = get_weather(AMAP_API_KEY)
                     before_msg = action.get_online_time_periods(userid,father_table_name="online_status",son_table_name="online_time_periods",target_date="2024-08-13")
                     all_msg = {**user_msg, **whether_msg, **before_msg} 
-                    #Í¨¹ıº¯Êı´«¸ø´óÄ£ĞÍ
-                    pass_data(all_msg)
-                    health_msg = deepseek_info(userid)
-                    #µ÷ÓÃ·¢ËÍÏûÏ¢º¯Êı·¢ËÍÏûÏ¢
-                    health_model = send_message.AsyncSendRequest(userid_list=[userid],msg_type="text",content=health_msg)
-                    send_message.send_message(health_model)
-                    #²åÈë½¡¿µÌáĞÑÊı¾İµ½ÌáĞÑ±í
-                    action.insert_health_msg(user_id=userid,msg=health_msg,Time=datetime.now())
+                    # è¿™é‡Œéœ€è¦å®ç°pass_dataå’Œdeepseek_infoå‡½æ•°
+                    # æš‚æ—¶æ³¨é‡Šæ‰è¿™éƒ¨åˆ†ä»£ç 
+                    # pass_data(all_msg)
+                    # health_msg = deepseek_info(userid)
+                    # health_model = send_message.AsyncSendRequest(
+                    #     userid_list=[userid],
+                    #     msg_type="text",
+                    #     content="å¥åº·æé†’æµ‹è¯•æ¶ˆæ¯"
+                    # )
+                    # send_message.send_message(health_model)
+                    # action.insert_health_msg(
+                    #     user_id=userid,
+                    #     msg="å¥åº·æé†’æµ‹è¯•æ¶ˆæ¯",
+                    #     Time=datetime.now()
+                    # )
 
             
             

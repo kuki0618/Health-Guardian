@@ -1,14 +1,14 @@
 from core.config import CronTrigger,IntervalTrigger,BackgroundScheduler,FastAPI,HTTPException,BaseModel,Optional,httpx,datetime,timedelta,get_dingtalk_access_token,List
 import time as time_module
 
-app = FastAPI(title="¶¤¶¤¿¼ÇÚAPI", version="1.0.0")
+app = FastAPI(title="ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½API", version="1.0.0")
 
 def reschedule_data(data:dict):
     flat_data_list = []
     for item in data['recordresult']:
         userCheckTime = timestamp_to_datetime(item['userCheckTime'])
         flat_data = {
-            # µÚÒ»²ãÊý¾Ý
+            # ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             'userid': item["userId"],
             'date':userCheckTime.strftime("%Y-%m-%d"),
             "datetime":userCheckTime.strftime("%Y-%m-%d %H:%M:%S"),
@@ -18,25 +18,25 @@ def reschedule_data(data:dict):
     return flat_data_list
 
 def datetime_to_timestamp(dt: datetime.datetime) -> int:
-    """datetime×ªÊ±¼ä´Á(ºÁÃë)"""
+    """datetime×ªÊ±ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½)"""
     return int(dt.timestamp() * 1000)
 
 def timestamp_to_datetime(timestamp: int) -> datetime.datetime:
-    """Ê±¼ä´Á×ªdatetime"""
+    """Ê±ï¿½ï¿½ï¿½×ªdatetime"""
     return datetime.datetime.fromtimestamp(timestamp / 1000)
 
 class AttendanceManager:
     def __init__(self):
-        # Ê¹ÓÃ×Öµä´æ´¢Ã¿ÌìµÄÇ©µ½×´Ì¬ {date: {userid: {'checked_in': bool, 'checked_out': bool}}}
+        # Ê¹ï¿½ï¿½ï¿½Öµï¿½æ´¢Ã¿ï¿½ï¿½ï¿½Ç©ï¿½ï¿½×´Ì¬ {date: {userid: {'checked_in': bool, 'checked_out': bool}}}
         self.daily_status: Dict[str, Dict[str, Dict[str, bool]]] = {}
         self.lock = asyncio.Lock()
     
     def _get_today_key(self) -> str:
-        """»ñÈ¡½ñÌìµÄÈÕÆÚ¼ü"""
+        """ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¼ï¿½"""
         return datetime.now().strftime("%Y-%m-%d")
     
     def _is_in_time_period(self, start_hour: int, end_hour: int) -> bool:
-        """¼ì²éµ±Ç°Ê±¼äÊÇ·ñÔÚÖ¸¶¨Ê±¼ä¶ÎÄÚ"""
+        """ï¿½ï¿½éµ±Ç°Ê±ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½"""
         now = datetime.now()
         current_time = now.time()
         start_time = time(start_hour, 0)
@@ -44,60 +44,60 @@ class AttendanceManager:
         return start_time <= current_time <= end_time
     
     async def should_check_in(self, userid: str) -> bool:
-        """¼ì²éÊÇ·ñÓ¦¸ÃÖ´ÐÐÇ©µ½"""
+        """ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Ó¦ï¿½ï¿½Ö´ï¿½ï¿½Ç©ï¿½ï¿½"""
         async with self.lock:
             today = self._get_today_key()
             
-            # ³õÊ¼»¯½ñÌìµÄ¼ÇÂ¼
+            # ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Â¼
             if today not in self.daily_status:
                 self.daily_status[today] = {}
             if userid not in self.daily_status[today]:
                 self.daily_status[today][userid] = {'checked_in': False, 'checked_out': False}
             
-            # ¼ì²éÊÇ·ñÔÚÇ©µ½Ê±¶ÎÇÒÎ´Ç©µ½
+            # ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ç©ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Î´Ç©ï¿½ï¿½
             in_checkin_period = self._is_in_time_period(8, 12)
             
             return in_checkin_period 
     
     async def should_check_out(self, userid: str) -> bool:
-        """¼ì²éÊÇ·ñÓ¦¸ÃÖ´ÐÐÇ©ÍË"""
+        """ï¿½ï¿½ï¿½ï¿½Ç·ï¿½Ó¦ï¿½ï¿½Ö´ï¿½ï¿½Ç©ï¿½ï¿½"""
         async with self.lock:
             today = self._get_today_key()
             
-            # ³õÊ¼»¯½ñÌìµÄ¼ÇÂ¼
+            # ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½Â¼
             if today not in self.daily_status:
                 self.daily_status[today] = {}
             if userid not in self.daily_status[today]:
                 self.daily_status[today][userid] = {'checked_in': False, 'checked_out': False}
             
-            # ¼ì²éÊÇ·ñÔÚÇ©ÍËÊ±¶ÎÇÒÎ´Ç©ÍË
+            # ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ç©ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Î´Ç©ï¿½ï¿½
             in_checkout_period = self._is_in_time_period(18, 20) 
             
             return in_checkout_period 
     
     async def mark_checked_in(self, userid: str):
-        """±ê¼ÇÎªÒÑÇ©µ½"""
+        """ï¿½ï¿½ï¿½Îªï¿½ï¿½Ç©ï¿½ï¿½"""
         async with self.lock:
             today = self._get_today_key()
             if today in self.daily_status and userid in self.daily_status[today]:
                 self.daily_status[today][userid]['checked_in'] = True
     
     async def mark_checked_out(self, userid: str):
-        """±ê¼ÇÎªÒÑÇ©ÍË"""
+        """ï¿½ï¿½ï¿½Îªï¿½ï¿½Ç©ï¿½ï¿½"""
         async with self.lock:
             today = self._get_today_key()
             if today in self.daily_status and userid in self.daily_status[today]:
                 self.daily_status[today][userid]['checked_out'] = True
     
     def cleanup_old_records(self):
-        """ÇåÀí¹ýÆÚµÄ¼ÇÂ¼£¨·ÀÖ¹ÄÚ´æÐ¹Â©£©"""
+        """ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÚµÄ¼ï¿½Â¼ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½Ú´ï¿½Ð¹Â©ï¿½ï¿½"""
         today = self._get_today_key()
         keys_to_remove = [key for key in self.daily_status.keys() if key != today]
         for key in keys_to_remove:
             if key in self.daily_status:
                 del self.daily_status[key]
 
-#Ã÷Ìì¼ÌÐøÐÞ¸Ä£¬Ê¹Ö®»ñµÃÏëÒªµÄÊý¾Ý
+#ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ¸Ä£ï¿½Ê¹Ö®ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 class AttendanceRequest(BaseModel):
     userIdList: List[str] 
     workDateFrom: str
@@ -111,13 +111,13 @@ class recordResult(BaseModel):
     userId:str
 
 class AttendanceResponse(BaseModel):
-    recordresult: Optional[List[recordResult]] = None  # Ç©µ½¼ÇÂ¼ÁÐ±í
-    error_code: Optional[str] = None  # ´íÎóÂë
-    error_msg: Optional[str] = None  # ´íÎóÐÅÏ¢
+    recordresult: Optional[List[recordResult]] = None  # Ç©ï¿½ï¿½ï¿½ï¿½Â¼ï¿½Ð±ï¿½
+    error_code: Optional[str] = None  # ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    error_msg: Optional[str] = None  # ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢
 
 @app.get("/{userid}/attendance",response_model=AttendanceResponse)       
 async def process_attendance_for_user(userid:str):
-    """Îªµ¥¸öÓÃ»§´¦Àí¿¼ÇÚ"""
+    """Îªï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½"""
     try:
         today = datetime.now().strftime("%Y-%m-%d")
 
@@ -126,14 +126,14 @@ async def process_attendance_for_user(userid:str):
         start_time = current_hour  # 08:00-12:00
         end_time = current_hour + 1
         
-        # ×ª»»ÎªÊ±¼ä´Á
+        # ×ªï¿½ï¿½ÎªÊ±ï¿½ï¿½ï¿½
         start_timestamp = datetime_to_timestamp(start_time)
         end_timestamp = datetime_to_timestamp(end_time)
         
-        # »ñÈ¡·ÃÎÊÁîÅÆ
+        # ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         access_token = await get_dingtalk_access_token()
         
-        # µ÷ÓÃ¶¤¶¤API
+        # ï¿½ï¿½ï¿½Ã¶ï¿½ï¿½ï¿½API
         url = "https://oapi.dingtalk.com/attendance/list"
         params = {"accessToken": access_token}
         headers = {"Content-Type": "application/json"}
@@ -161,7 +161,7 @@ async def process_attendance_for_user(userid:str):
                 }
             
     except Exception as e:
-        print(f"´¦ÀíÓÃ»§ {userid} ¿¼ÇÚÊ±³ö´í: {str(e)}")
+        print(f"ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ {userid} ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½: {str(e)}")
         return {
             "action_taken": False,
             "error": str(e)

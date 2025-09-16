@@ -1,0 +1,21 @@
+# 忽略虚拟环境
+.venv/
+venv/
+
+# 忽略IDE设置
+.vscode/
+
+# 忽略Python缓存
+__pycache__/
+*.py[cod]
+
+# 忽略日志文件
+*.log
+
+# 忽略测试和开发文件
+tests/
+test/
+*.test.py
+
+# 忽略环境变量文件
+.env

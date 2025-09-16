@@ -3,17 +3,17 @@ from mysql.connector import pooling
 import os
 from typing import Generator
 
-# Êý¾Ý¿âÅäÖÃ
+# ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½ï¿½ï¿½ï¿½
 db_config = {
     "host": "localhost",
-    "user": "ÄãµÄÓÃ»§Ãû",
-    "password": "ÄãµÄÃÜÂë",
+    "user": "ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½",
+    "password": "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½",
     "database": "my_db",
     "port": 3306,
     "charset": "utf8mb4",
 }
 
-# ´´½¨Á¬½Ó³Ø
+# ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½
 connection_pool = pooling.MySQLConnectionPool(
     pool_name="my_pool",
     pool_size=5,
@@ -22,11 +22,11 @@ connection_pool = pooling.MySQLConnectionPool(
 )
 
 def get_db_connection():
-    """»ñÈ¡Êý¾Ý¿âÁ¬½Ó"""
+    """ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½ï¿½ï¿½ï¿½"""
     return connection_pool.get_connection()
 
 def get_db():
-    """ÒÀÀµ×¢ÈëÊ¹ÓÃµÄÊý¾Ý¿âÁ¬½Ó"""
+    """ï¿½ï¿½ï¿½ï¿½×¢ï¿½ï¿½Ê¹ï¿½Ãµï¿½ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½ï¿½ï¿½ï¿½"""
     conn = get_db_connection()
     try:
         yield conn

@@ -1,13 +1,13 @@
-from fastapi import FastAPI
+from fastapi import APIRouter
 from pydantic import BaseModel
 import asyncio
 from typing import Optional, List, Dict, Any
 import httpx
 from datetime import datetime,time
 
-from dependencies.dingtalk_token import get_dingtalk_access_token
+from dependencies.dingtalk_token_old import get_dingtalk_access_token
 
-#app = FastAPI(title="API", version="1.0.0")
+router = APIRouter(prefix="/attendance", tags=["attendance"])
 
 def reschedule_data(data:dict):
     flat_data_list = []
@@ -107,11 +107,14 @@ class recordResult(BaseModel):
     userId:str
 
 class AttendanceResponse(BaseModel):
+    action_taken: bool = False
+    checked:bool = False
     recordresult: Optional[List[recordResult]] = None  # Ç©µ½¼ÇÂ¼ÁÐ±í
-    error_code: Optional[str] = None  # ´íÎóÂë
-    error_msg: Optional[str] = None  # ´íÎóÐÅÏ¢
+    errorcode: Optional[str] = None  # ´íÎóÂë
+    errormsg: Optional[str] = None  # ´íÎóÐÅÏ¢
+    error: Optional[str] = None  # ´íÎóÐÅÏ¢
 
-#@app.get("/attendence-info") 
+@router.get("/{userid}/details", response_model=AttendanceResponse)
 async def process_attendance_for_user(userid:str,start_time:datetime,end_time:datetime):
     try:
         
@@ -141,12 +144,13 @@ async def process_attendance_for_user(userid:str,start_time:datetime,end_time:da
                 return {
                     "action_taken": True,
                     "checked":True,
-                    "data": response
+                    "recordresult": response
                 }
             else:
                 return {
                     "action_taken": True,
                     "checked":False,
+                    "errormsg":response["errmsg"]
                 }
             
     except Exception as e:

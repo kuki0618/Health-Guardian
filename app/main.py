@@ -40,7 +40,7 @@ async def startup_event():
         
         for userid in userids:
             try:
-                result = get_user_info(userid)
+                result = get_user_info.get_user_details(userid)
                 action.create_item(table_name="employees", item=result)
                 logger.info(f"成功获取用户 {userid} 数据")
             except Exception as e:
@@ -86,9 +86,14 @@ async def shutdown_event():
 
 #检查用户是否应该签到
 def conditional_attendance(userids:List[str]):
+
+    now = datetime.datetime.now()
+    current_hour = now.hour
+    start_time = current_hour  # 08:00-12:00
+    end_time = current_hour + 1
     for userid in userids:
         try:
-            if get_attendence.attendance_manager.should_check_in(userid):
+            if get_attendence.attendance_manager.should_check_in(userid,start_time,end_time):
                 result = get_attendence.process_attendance_for_user(userid)
                 if result["action_taken"] and result["checked"]:
                 #在原函数中返回信息标注好签到还是签退，但是都写在一个表里

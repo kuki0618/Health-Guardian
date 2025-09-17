@@ -8,10 +8,10 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 app_dir = os.path.dirname(current_dir) 
 sys.path.insert(0, app_dir)  
 
-from dependencies.dingtalk_token import get_dingtalk_access_token
+from dependencies.dingtalk_token_old import get_dingtalk_access_token
 
 
-@app.get("/test-token")
+@app.get("/test-token-old")
 async def test_token():
     try:
         access_token = await get_dingtalk_access_token()

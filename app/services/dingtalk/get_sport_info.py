@@ -39,8 +39,3 @@ async def fetch_user_steps(
         raise HTTPException(status_code=e.response.status_code, detail=f"API query fail: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"API query fail: {e}")
-    
-#外部函数示例
-async def get_sport_info(user_id:str):
-    sport_data = await fetch_user_steps(object_id=user_id,stat_date=date.today().strftime("%Y-%m-%d"))
-    return sport_data

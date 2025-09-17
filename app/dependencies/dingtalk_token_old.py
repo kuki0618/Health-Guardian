@@ -11,17 +11,16 @@ DINGTALK_APP_SECRET = os.getenv("DINGTALK_APP_SECRET")
 
 async def get_dingtalk_access_token() -> str:
     url = "https://oapi.dingtalk.com/gettoken"
-    data = {
-        "appKey": DINGTALK_APP_KEY,
-        "appSecret": DINGTALK_APP_SECRET
+    params = {
+        "appkey": DINGTALK_APP_KEY,
+        "appsecret": DINGTALK_APP_SECRET
     }
     
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.post(url, json=data)
+            response = await client.get(url, params=params)
             response.raise_for_status()
             token_data = response.json()
-            return token_data["accessToken"]
+            return token_data
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"fail to get access token: {str(e)}")
-        

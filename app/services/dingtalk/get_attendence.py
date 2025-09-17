@@ -5,9 +5,15 @@ from typing import Optional, List, Dict, Any
 import httpx
 from datetime import datetime,time
 
-from dependencies.dingtalk_token_old import get_dingtalk_access_token
+from dependencies.dingtalk_token import get_dingtalk_access_token
 
 router = APIRouter(prefix="/attendance", tags=["attendance"])
+
+def datetime_to_timestamp(dt: datetime) -> int:
+    return int(dt.timestamp() * 1000)
+
+def timestamp_to_datetime(timestamp: int) -> datetime:
+    return datetime.fromtimestamp(timestamp / 1000)
 
 def reschedule_data(data:dict):
     flat_data_list = []
@@ -23,11 +29,6 @@ def reschedule_data(data:dict):
         flat_data_list.append(flat_data)
     return flat_data_list
 
-def datetime_to_timestamp(dt: datetime) -> int:
-    return int(dt.timestamp() * 1000)
-
-def timestamp_to_datetime(timestamp: int) -> datetime:
-    return datetime.fromtimestamp(timestamp / 1000)
 
 class AttendanceManager:
     def __init__(self):
@@ -94,45 +95,27 @@ class AttendanceManager:
             if key in self.daily_status:
                 del self.daily_status[key]
 
-class AttendanceRequest(BaseModel):
-    userIdList: List[str] 
-    workDateFrom: str
-    workDateTo: str
-    limit: int = 0
-    size: int = 50
-
-class recordResult(BaseModel):
-    userCheckTime:int
-    checkType:str
-    userId:str
-
-class AttendanceResponse(BaseModel):
-    action_taken: bool = False
-    checked:bool = False
-    recordresult: Optional[List[recordResult]] = None  # 签到记录列表
-    errorcode: Optional[str] = None  # 错误码
-    errormsg: Optional[str] = None  # 错误信息
-    error: Optional[str] = None  # 错误信息
-
-@router.get("/{userid}/details", response_model=AttendanceResponse)
+@router.get("/{userid}/details")
 async def process_attendance_for_user(userid:str,start_time:datetime,end_time:datetime):
     try:
         
         # 转换为时间戳
-        start_timestamp = datetime_to_timestamp(start_time)
-        end_timestamp = datetime_to_timestamp(end_time)
+        start_timestamp = datetime.strftime(start_time,"%Y-%m-%d %H:%M:%S")
+        end_timestamp = datetime.strftime(end_time,"%Y-%m-%d %H:%M:%S")
         
         # 获取访问令牌
         access_token = await get_dingtalk_access_token()
-        
+        print(f"get access token: {access_token}")
         # 调用钉钉API
         url = "https://oapi.dingtalk.com/attendance/list"
-        params = {"accessToken": access_token}
+        params = {"access_token": access_token}
         headers = {"Content-Type": "application/json"}
         data = {
             "userIdList": [userid],
             "workDateFrom": start_timestamp,
-            "workDateTo": end_timestamp
+            "workDateTo": end_timestamp,
+            "offset":0,
+            "limit":50
         }
         
         async with httpx.AsyncClient() as client:
@@ -150,7 +133,8 @@ async def process_attendance_for_user(userid:str,start_time:datetime,end_time:da
                 return {
                     "action_taken": True,
                     "checked":False,
-                    "errormsg":response["errmsg"]
+                    "errormsg":response["errmsg"],
+                    "errorcode":response["errorcode"]
                 }
             
     except Exception as e:

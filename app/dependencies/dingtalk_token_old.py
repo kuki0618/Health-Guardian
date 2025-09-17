@@ -21,6 +21,6 @@ async def get_dingtalk_access_token() -> str:
             response = await client.get(url, params=params)
             response.raise_for_status()
             token_data = response.json()
-            return token_data
+            return token_data["access_token"]
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"fail to get access token: {str(e)}")

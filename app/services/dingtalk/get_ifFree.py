@@ -3,8 +3,7 @@ from pydantic import BaseModel
 import asyncio
 from typing import List
 import httpx
-import datetime
-from datetime import timedelta
+from datetime import datetime,timedelta
 from dependencies.dingtalk_token import get_dingtalk_access_token
 
 
@@ -53,9 +52,7 @@ class scheduleInformation(BaseModel):
 
 @router.get("/{userid}")
 async def get_user_free_busy_status(userid:str):
-    """
-    获取用户忙闲状态的异步函数
-    """
+   
     access_token = await get_dingtalk_access_token()
 
     # 设置查询时间范围（当前时间到2小时前）
@@ -68,19 +65,21 @@ async def get_user_free_busy_status(userid:str):
     
     # 构建请求数据
     data = {
-        "userIds": "",
+        "userIds": [userid],
         "startTime": time_min_iso,
         "endTime": time_max_iso
     }
     
-    url = f"/v1.0/calendar/users/{userid}/getSchedule HTTP/1.1"
-    params = {"accessToken": access_token}
-    headers = {"Content-Type": "application/json"}
+    url = f"https://api.dingtalk.com/v1.0/calendar/users/{userid}/querySchedule"
+    headers = {
+        "Content-Type": "application/json",
+        "x-acs-dingtalk-access-token": access_token  # 关键修改：使用正确的头部
+    }
     try:
         
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                url, params=params,headers=headers,json=data)
+                url, headers=headers,json=data)
             
             if response.status_code == 200:
                 result = response.json()
@@ -99,14 +98,5 @@ async def get_user_free_busy_status(userid:str):
     except Exception as e:
         error_msg = f"quary process fail: {str(e)}"
         raise HTTPException(status_code=500, detail=error_msg)
-'''
-def scheduled_free_busy_task():
-    
-    try:
-        # 在后台运行异步任务
-        for userid in userids:
-            asyncio.create_task(get_user_free_busy_status(userid))
-    except Exception as e:
-        pass
-'''
+
 

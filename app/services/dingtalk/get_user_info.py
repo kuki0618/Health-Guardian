@@ -9,14 +9,12 @@ from dependencies.dingtalk_token import get_dingtalk_access_token
 
 router = APIRouter(prefix="/user_info", tags=["user_info"])
 
-class UserIdRequest(BaseModel):
-    userid: str = Query(..., description="ID")
-
 class Result(BaseModel):
     userid:str
     name:str
     title:Optional[str] = None
     extension:Optional[str] = None
+    unionid:str
 
 class UserDetailResponse(BaseModel):
     errcode:int

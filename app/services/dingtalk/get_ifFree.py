@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import HTTPException,APIRouter
 from pydantic import BaseModel
 import asyncio
 from typing import List
@@ -8,7 +8,8 @@ from datetime import timedelta
 from dependencies.dingtalk_token import get_dingtalk_access_token
 
 
-app = FastAPI(title="钉钉用户忙闲状态查询服务")
+router = APIRouter(prefix="/ifFree", tags=["ifFree"])
+
 userids ={}
 def reschedule_data(data:dict):
     flat_data_list = []
@@ -50,6 +51,7 @@ class scheduleInformation(BaseModel):
     error:str
     scheduleItems: List[FreeBusyItem]  # 忙闲状态列表
 
+@router.get("/{userid}")
 async def get_user_free_busy_status(userid:str):
     """
     获取用户忙闲状态的异步函数
@@ -88,24 +90,23 @@ async def get_user_free_busy_status(userid:str):
                 else: 
                     return []
             else:
-                error_msg = f"忙闲状态查询失败: {response.status_code}, {response.text}"
+                error_msg = f"status quary fail: {response.status_code}, {response.text}"
                 raise HTTPException(status_code=response.status_code, detail=error_msg)
                 
     except httpx.RequestError as e:
-        error_msg = f"网络请求错误: {str(e)}"
+        error_msg = f"internet quary fail: {str(e)}"
         raise HTTPException(status_code=500, detail=error_msg)
     except Exception as e:
-        error_msg = f"查询过程发生异常: {str(e)}"
+        error_msg = f"quary process fail: {str(e)}"
         raise HTTPException(status_code=500, detail=error_msg)
-
+'''
 def scheduled_free_busy_task():
-    """
-    定时任务函数 - 每2小时执行一次
-    """
+    
     try:
         # 在后台运行异步任务
         for userid in userids:
             asyncio.create_task(get_user_free_busy_status(userid))
     except Exception as e:
         pass
+'''
 

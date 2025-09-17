@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import HTTPException, Query,APIRouter
 from pydantic import BaseModel
+from typing import Optional
+
 import httpx
 import json
 from dependencies.dingtalk_token import get_dingtalk_access_token
 
-app = FastAPI(title="API", version="1.0.0")
+router = APIRouter(prefix="/user_info", tags=["user_info"])
 
 class UserIdRequest(BaseModel):
     userid: str = Query(..., description="ID")
@@ -13,19 +15,19 @@ class UserIdRequest(BaseModel):
 class Result(BaseModel):
     userid:str
     name:str
-    title:str
-    extension:str
+    title:Optional[str] = None
+    extension:Optional[str] = None
 
 class UserDetailResponse(BaseModel):
     errcode:int
     result:Result
     
         
-@app.post("/v1.0/contact/users/get",response_model=UserDetailResponse)
+@router.get("/{userid}",response_model=UserDetailResponse)
 async def get_user_details(userid:str):
     try:
         access_token = await get_dingtalk_access_token()
-        
+        print(f"get access token: {access_token}")
         # 调用钉钉API
         url = "https://oapi.dingtalk.com/topapi/v2/user/get"
         data = {
@@ -55,6 +57,7 @@ async def get_user_details(userid:str):
             #response["hobby"] = response["result"].get("爱好", "")
             #response["age"] = response["result"].get("年龄", "")
             return response
+        
     except httpx.HTTPStatusError as e:
         print(f"http error: {e.response.status_code},{e.response.text}")
         if e.response.status_code == 404:

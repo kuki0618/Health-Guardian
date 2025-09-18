@@ -17,7 +17,7 @@ async def get_calendar_events(
 ):
     access_token = await get_dingtalk_access_token()
     
-    # 构建API URL - 注意这里的path参数 'me'
+    # 构建API URL - 注意这里的spath参数 'me'
     api_url = f"https://api.dingtalk.com/v1.0/calendar/users/{userId}/calendars/{calendarId}/events"
     headers = {
         "Content-Type": "application/json",

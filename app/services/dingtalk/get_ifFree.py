@@ -82,12 +82,15 @@ async def get_user_free_busy_status(userid:str):
                 url, headers=headers,json=data)
             
             if response.status_code == 200:
+                '''
                 result = response.json()
                 if len(result["scheduleInformation"])!=0:
                     result = reschedule_data(result)
                     return result
                 else: 
                     return []
+                '''
+                return response.json()
             else:
                 error_msg = f"status quary fail: {response.status_code}, {response.text}"
                 raise HTTPException(status_code=response.status_code, detail=error_msg)

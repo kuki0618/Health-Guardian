@@ -99,9 +99,9 @@ class AttendanceManager:
 async def process_attendance_for_user(userid:str,start_time:datetime,end_time:datetime):
     try:
         
-        # 转换为时间戳
-        start_timestamp = datetime.strftime(start_time,"%Y-%m-%d %H:%M:%S")
-        end_timestamp = datetime.strftime(end_time,"%Y-%m-%d %H:%M:%S")
+        # 转换为特定格式
+        start_time = datetime.strftime(start_time,"%Y-%m-%d %H:%M:%S")
+        end_time = datetime.strftime(end_time,"%Y-%m-%d %H:%M:%S")
         
         # 获取访问令牌
         access_token = await get_dingtalk_access_token()
@@ -112,8 +112,8 @@ async def process_attendance_for_user(userid:str,start_time:datetime,end_time:da
         headers = {"Content-Type": "application/json"}
         data = {
             "userIdList": [userid],
-            "workDateFrom": start_timestamp,
-            "workDateTo": end_timestamp,
+            "workDateFrom": start_time,
+            "workDateTo": end_time,
             "offset":0,
             "limit":50
         }

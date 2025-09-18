@@ -1,11 +1,13 @@
 # app/services/attendance_service.py
+from fastapi import Depends
 import asyncio
-from typing import Dict, List, Any
+from typing import Dict, List
 from datetime import datetime, time
 import httpx
 import logging
 
-from dependencies.dingtalk_token import get_dingtalk_access_token
+from core import database
+from api.dependencies.dingtalk_token import get_dingtalk_access_token
 from api.models.attendance import AttendanceResponse, AttendanceRecord,AttendanceRequest
 
 logger = logging.getLogger(__name__)
@@ -103,14 +105,7 @@ class AttendanceService:
             url = "https://oapi.dingtalk.com/attendance/list"
             params = {"access_token": access_token}
             headers = {"Content-Type": "application/json"}
-            data = {
-                "userIdList": request.user_id_list,
-                "workDateFrom": request.work_date_from,
-                "workDateTo": request.work_date_to,
-                "offset": request.offset,
-                "limit": request.limit
-            }
-            
+            data = request.dict()
             async with httpx.AsyncClient() as client:
                 response = await client.post(url, params=params, headers=headers, json=data)
                 response.raise_for_status()
@@ -137,3 +132,42 @@ class AttendanceService:
                 action_taken=False,
                 error=str(e)
             )
+        
+    async def add_attendence_info(
+        self,
+        all_data:List[dict],
+        conn
+        ):
+        cursor = conn.cursor(dictionary=True)
+        try:
+            for data in all_data:
+                user_id = data['userid']
+                date = data['date']
+
+                # 第一步：插入主表 online_status，获取attendance_id
+                insert_main_query = f"""
+                INSERT INTO online_status (userid, date) 
+                VALUES (%s, %s)
+                """
+                cursor.execute(insert_main_query, (user_id, date))
+                
+                # 获取刚插入的主键ID
+                main_id = cursor.lastrowid
+
+                time = data['datetime']
+                checkType = data['checkType']
+                # 第二步：插入子表 online_time_periods
+                insert_period_query = f"""
+                INSERT INTO attendence_data (task_id,userCheckTime,checkType) 
+                VALUES (%s, %s, %s)
+                """
+                cursor.execute(insert_period_query, (main_id, time, checkType))
+
+                # 提交事务
+            conn.commit()
+        except Exception as e:
+        # 发生错误时回滚
+            conn.rollback()
+            raise e
+        finally:
+            cursor.close()

@@ -16,10 +16,31 @@ class AttendanceResponse(BaseModel):
     errormsg: Optional[str] = None
     errorcode: Optional[int] = None
     error: Optional[str] = None
-
+    '''
+    {"action_taken":true,"checked":true,
+    "recordresult":[
+    {"userid":"manager4585","date":"2025-09-10","datetime":"2025-09-10 08:00:00","checkType":"OnDuty"},
+    {"userid":"manager4585","date":"2025-09-10","datetime":"2025-09-10 16:38:43","checkType":"OffDuty"},
+    {"userid":"manager4585","date":"2025-09-11","datetime":"2025-09-11 18:00:00","checkType":"OffDuty"},
+    {"userid":"manager4585","date":"2025-09-11","datetime":"2025-09-11 08:00:00","checkType":"OnDuty"}
+    ],
+    "errormsg":null,"errorcode":null,"error":null}
+    '''
+    
 class AttendanceRequest(BaseModel):
-    user_id_list: List[str]
-    work_date_from: str
-    work_date_to: str
+    userIdList: List[str]
+    workDateFrom: str
+    workDateTo: str
     offset: int = 0
     limit: int = 50
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "userIdList": ["manager4585"],
+                "workDateFrom": "2025-09-15 00:00:00 ",
+                "workDateTo": "2025-09-15 23:59:59 ",
+                "offset":0,
+                "limit":50
+            }
+        }

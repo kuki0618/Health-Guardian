@@ -10,9 +10,9 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 app_dir = os.path.dirname(current_dir) 
 sys.path.insert(0, app_dir)  
 
-from services.dingtalk import get_schedule_list
+from app.api.endpoints.Calendar import get_calendar_events
 
-app.include_router(get_schedule_list.router)
+app.include_router(get_calendar_events.router)
 
 if __name__ == "__main__":
     import uvicorn

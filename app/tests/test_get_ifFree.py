@@ -11,7 +11,7 @@ app_dir = os.path.dirname(current_dir)
 sys.path.insert(0, app_dir)  
 
 from services.dingtalk import get_ifFree
-
+#6kPiPK8K1yV8lDlRc50TKFwiEiE
 app.include_router(get_ifFree.router)
 
 if __name__ == "__main__":

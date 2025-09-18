@@ -12,8 +12,10 @@ router = APIRouter(prefix="/calendar",tags=["calendar"])
 
 @router.get("/{userId}/{calendarId}")
 async def get_calendar_events(
-    calneder_request:CalenderRequest,
-    calendar_service
+    userId:str,
+    calendarId:str,
+    timeMin:str,
+    timeMax:str,
 ):
     access_token = await get_dingtalk_access_token()
     
@@ -23,8 +25,8 @@ async def get_calendar_events(
         "Content-Type": "application/json",
         "x-acs-dingtalk-access-token": access_token}
     params = {
-        "timeMin": time_min,
-        "timeMax": time_max,  # 可选
+        "timeMin": timeMin,
+        "timeMax": timeMax,  # 可选
     }
     try:
         async with httpx.AsyncClient() as client:

@@ -115,6 +115,7 @@ def conditional_status(userids: List[str]):
         try:
         #如果用户已经签到但是没有签退，那么就查询用户是否在线
             if attendance_manager.daily_status[userid]["checked_in"] == True and attendance_manager.daily_status[userid]["checked_out"] == False:
+                
                 result = get_ifFree.get_user_free_busy_status(userid)
                 #如果在线，那么就插入数据
                 if len(result)!=0:

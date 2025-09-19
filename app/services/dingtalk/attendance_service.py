@@ -144,16 +144,26 @@ class AttendanceService:
             for data in all_data:
                 user_id = data['userid']
                 date = data['date']
-
-                # 第一步：插入主表 online_status，获取attendance_id
-                insert_main_query = f"""
-                INSERT INTO online_status (userid, date) 
-                VALUES (%s, %s)
+                select_query = """
+                SELECT id FROM online_status WHERE userid = %s AND date = %s
                 """
-                cursor.execute(insert_main_query, (user_id, date))
-                
-                # 获取刚插入的主键ID
-                main_id = cursor.lastrowid
+                cursor.execute(select_query, (user_id, date))
+                existing_record = cursor.fetchone()
+
+                if existing_record:
+                    # 记录已存在，使用现有ID
+                    main_id = existing_record['id']
+                    logger.info(f"record exist,id: {main_id}")
+                else:   
+                    # 第一步：插入主表 online_status，获取attendance_id
+                    insert_main_query = f"""
+                    INSERT INTO online_status (userid, date) 
+                    VALUES (%s, %s)
+                    """
+                    cursor.execute(insert_main_query, (user_id, date))
+                    
+                    # 获取刚插入的主键ID
+                    main_id = cursor.lastrowid
 
                 time = data['datetime']
                 checkType = data['checkType']

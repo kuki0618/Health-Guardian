@@ -2,8 +2,8 @@ import httpx
 import json
 import logging
 from typing import Dict, Any
-from dependencies.dingtalk_token import get_dingtalk_access_token
-from app.models.user import UserDetailResponse
+from api.dependencies.dingtalk_token import get_dingtalk_access_token
+from api.models.user import UserDetailResponse
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class UserService:
             if e.response.status_code == 404:
                 raise Exception(f"user  not exist")
             else:
-                error_detail = e.response.json().get("errmsg", "µ÷ÓÃ¶¤¶¤APIÊ§°Ü")
+                error_detail = e.response.json().get("errmsg", "API call failed")
                 raise Exception(f"HTTP error: {error_detail}")
         except Exception as e:
             logger.error(f"get user details fail: {str(e)}")

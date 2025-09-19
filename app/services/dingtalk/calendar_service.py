@@ -17,7 +17,7 @@ class CalendarService:
             access_token = await get_dingtalk_access_token()
             
             # 构建API URL
-            api_url = f"https://api.dingtalk.com/v1.0/calendar/users/{request.user_id}/calendars/{request.calendar_id}/events"
+            api_url = f"https://api.dingtalk.com/v1.0/calendar/users/{request.userId}/calendars/{request.calendarId}/events"
             headers = {
                 "Content-Type": "application/json",
                 "x-acs-dingtalk-access-token": access_token
@@ -25,12 +25,12 @@ class CalendarService:
             
             # 构建查询参数
             params = {}
-            if request.time_min:
-                params["timeMin"] = request.time_min
-            if request.time_max:
-                params["timeMax"] = request.time_max
-            if request.max_results:
-                params["maxResults"] = request.max_results
+            if request.timeMin:
+                params["timeMin"] = request.timeMin
+            if request.timeMax:
+                params["timeMax"] = request.timeMax
+            if request.maxResults:
+                params["maxResults"] = request.maxResults
             
             async with httpx.AsyncClient() as client:
                 response = await client.get(
@@ -54,18 +54,18 @@ class CalendarService:
             logger.error(f"Calendar API query failed: {str(e)}")
             raise
     
-    async def check_user_availability(self, user_id: str, duration_minutes: int = 60) -> bool:
+    async def check_user_availability(self, userId: str, duration_minutes: int = 60) -> bool:
         #检查用户是否有空
         try:
             now = datetime.now()
-            time_min = now.isoformat() + "Z"
-            time_max = (now + timedelta(minutes=duration_minutes)).isoformat() + "Z"
+            timeMin = now.isoformat() + "Z"
+            timeMax = (now + timedelta(minutes=duration_minutes)).isoformat() + "Z"
             
             request = CalendarRequest(
-                user_id=user_id,
-                calendar_id="primary",
-                time_min=time_min,
-                time_max=time_max
+                userId=userId,
+                calendarId="primary",
+                timeMin=timeMin,
+                timeMax=timeMax
             )
             
             result = await self.get_calendar_events(request)

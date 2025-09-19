@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional
 
-from app.services.user_service import UserService
-from app.models.user import UserDetailResponse
+from app.services.dingtalk.user_service import UserService
+from app.api.models.user import UserDetailResponse
 
 router = APIRouter(prefix="/user_info", tags=["user_info"])
 

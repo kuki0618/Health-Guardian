@@ -9,7 +9,7 @@ app = FastAPI()
 @app.get("/tables")
 async def get_tables(conn = Depends(database.get_db)):
     #创建数据库游标
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     #执行 SQL 语句 "SHOW TABLES" 查询所有表
     cursor.execute("SHOW TABLES")
     #获取所有查询结果
@@ -19,7 +19,7 @@ async def get_tables(conn = Depends(database.get_db)):
 # 获取表结构
 @app.get("/table/{table_name}/columns")
 async def get_table_columns(table_name: str, conn = Depends(database.get_db)):
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     cursor.execute(f"DESCRIBE {table_name}")
     #tables = cursor.fetchall()
     columns = cursor.fetchall()
@@ -33,7 +33,7 @@ async def get_table_data(
     offset: int = 0,
     conn = Depends(database.get_db)
 ):
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     query = f"SELECT * FROM {table_name} LIMIT %s OFFSET %s"
     cursor.execute(query, (limit, offset))
     rows = cursor.fetchall()
@@ -46,7 +46,7 @@ async def get_item_by_id(
     id: int,
     conn = Depends(database.get_db)
 ):
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     
     # 先获取主键字段名
     cursor.execute(f"SHOW KEYS FROM {table_name} WHERE Key_name = 'PRIMARY'")
@@ -66,7 +66,7 @@ async def get_item_by_id(
 # 查询某个表的所有主键值
 @app.get("/{table_name}/values")
 async def get_primary_values(table_name:str,conn = Depends(database.get_db)):
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     cursor.execute(f"SHOW KEYS FROM {table_name} WHERE Key_name = 'PRIMARY'")
     pk_column = cursor.fetchone()[4]  # Column_name是第5个字段
 
@@ -81,7 +81,7 @@ async def create_item(
     item: dict,
     conn = Depends(database.get_db)
 ):
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     
     # 构建插入语句
     columns = ", ".join(item.keys())
@@ -104,7 +104,7 @@ async def insert_online_item(
     data_list: List[dict],
     conn = Depends(database.get_db)
 ):
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     for data in data_list:
         user_id = data['user_id']
         date = data['date']
@@ -155,7 +155,7 @@ def get_online_time_periods(
         target_times: List[str],
         conn = Depends(database.get_db)) -> List[Dict[str, Any]]:
         all_periods = {}
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         for target_time in target_times:
         # 查询主表获取attendance_id
             query_main = f"""
@@ -190,7 +190,7 @@ async def insert_health_msg(
     Time:datetime,
     conn = Depends(database.get_db)
 ):
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     date = Time.strftime("%Y-%m-%d")
 
     # 第一步：插入主表 online_status，获取attendance_id
@@ -223,7 +223,7 @@ def add_attendence_info(
         all_data:List[dict],
         conn = Depends(database.get_db)
         ):
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     for data in all_data:
         user_id = data['user_id']
         date = data['date']

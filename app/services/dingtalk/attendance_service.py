@@ -5,6 +5,7 @@ from typing import Dict, List
 from datetime import datetime, time
 import httpx
 import logging
+import pymysql.cursors
 
 from core import database
 from api.dependencies.dingtalk_token import get_dingtalk_access_token
@@ -138,7 +139,7 @@ class AttendanceService:
         all_data:List[dict],
         conn
         ):
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         try:
             for data in all_data:
                 user_id = data['userid']
@@ -158,7 +159,7 @@ class AttendanceService:
                 checkType = data['checkType']
                 # 第二步：插入子表 online_time_periods
                 insert_period_query = f"""
-                INSERT INTO attendence_data (task_id,userCheckTime,checkType) 
+                INSERT INTO attendance_data (task_id,userCheckTime,checkType) 
                 VALUES (%s, %s, %s)
                 """
                 cursor.execute(insert_period_query, (main_id, time, checkType))

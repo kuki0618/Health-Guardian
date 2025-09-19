@@ -1,32 +1,32 @@
-import mysql.connector
-from mysql.connector import pooling
+import pymysql
+from dbutils.pooled_db import PooledDB
 import os
 from typing import Generator
 
-# 数据库配置
 db_config = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "user": os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD"),
-    "database": os.getenv("DB_NAME"),
-    "port": int(os.getenv("DB_PORT")),
+    "host": os.getenv("DB_HOST","localhost"),
+    "user": os.getenv("DB_USER","root"),
+    "password": os.getenv("DB_PASSWORD","123456"),
+    "database": os.getenv("DB_NAME","my_db"),
+    "port": int(os.getenv("DB_PORT", 3306)),
     "charset": "utf8mb4",
+    "autocommit": True
 }
 
-# 创建连接池
-connection_pool = pooling.MySQLConnectionPool(
-    pool_name="my_pool",
-    pool_size=5,
-    pool_reset_session=True,
+# 使用 DBUtils 连接池
+connection_pool = PooledDB(
+    creator=pymysql,
+    maxconnections=5,
+    mincached=2,
+    maxcached=5,
+    blocking=True,
     **db_config
 )
 
 def get_db_connection():
-    #获取数据库连接
-    return connection_pool.get_connection()
+    return connection_pool.connection()
 
-def get_db():
-    #依赖注入使用的数据库连接
+def get_db() -> Generator:
     conn = get_db_connection()
     try:
         yield conn

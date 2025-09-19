@@ -66,12 +66,12 @@ async def test_add_attendance_records(
     attendance_service: AttendanceService = Depends(get_attendance_service),
     conn = Depends(database.get_db)
 ):
-    mock_records ={"recordresult":[
+    mock_records =[
     {"userid":"manager4585","date":"2025-09-10","datetime":"2025-09-10 08:00:00","checkType":"OnDuty"},
     {"userid":"manager4585","date":"2025-09-10","datetime":"2025-09-10 16:38:43","checkType":"OffDuty"},
     {"userid":"manager4585","date":"2025-09-11","datetime":"2025-09-11 18:00:00","checkType":"OffDuty"},
     {"userid":"manager4585","date":"2025-09-11","datetime":"2025-09-11 08:00:00","checkType":"OnDuty"}
-    ],}
+    ]
   
     #测试添加考勤记录到数据库
     try:
@@ -79,7 +79,7 @@ async def test_add_attendance_records(
         await attendance_service.add_attendence_info(mock_records, conn)
         return {
             "message": "attendance records add successed",
-            "count": len(mock_records['recordresult']),
+            "count": len(mock_records),
             "records": mock_records
         }
     except Exception as e:

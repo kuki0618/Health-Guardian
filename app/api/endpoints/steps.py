@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Dict, Optional
 from datetime import date
 
-from app.services.sport_service import SportService
-from app.models.sport import UserStepResponse, UserStepRequest
+from services.dingtalk.steps_service import SportService
+from api.models.steps import UserStepResponse, UserStepRequest
 
 router = APIRouter(prefix="/sport_info", tags=["sport_info"])
 

@@ -17,7 +17,7 @@ class CalendarService:
             access_token = await get_dingtalk_access_token()
             
             # 构建API URL
-            api_url = f"https://api.dingtalk.com/v1.0/calendar/users/{request.userId}/calendars/{request.calendarId}/events"
+            api_url = f"https://api.dingtalk.com/v1.0/calendar/users/{request.unionid}/calendars/{request.calendarId}/events"
             headers = {
                 "Content-Type": "application/json",
                 "x-acs-dingtalk-access-token": access_token
@@ -54,7 +54,7 @@ class CalendarService:
             logger.error(f"Calendar API query failed: {str(e)}")
             raise
     
-    async def check_user_availability(self, userId: str, duration_minutes: int = 60) -> bool:
+    async def check_user_availability(self, unionid: str, duration_minutes: int = 60) -> bool:
         #检查用户是否有空
         try:
             now = datetime.now()
@@ -62,7 +62,7 @@ class CalendarService:
             timeMax = (now + timedelta(minutes=duration_minutes)).isoformat() + "Z"
             
             request = CalendarRequest(
-                userId=userId,
+                unionid=unionid,
                 calendarId="primary",
                 timeMin=timeMin,
                 timeMax=timeMax

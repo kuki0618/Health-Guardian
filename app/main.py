@@ -105,7 +105,7 @@ def conditional_attendance(userids:List[str]):
                 #在原函数中返回信息标注好签到还是签退，但是都写在一个表里
                     action.add_attendence_info(result["data"])
                     get_attendence.attendance_manager.mark_checked_out(userid)
-            logger.info(f"用户 {userid} 考勤处理成功")
+            logger.info(f" {userid} 考勤处理成功")
         except Exception as e:
             logger.error(f"用户 {userid} 考勤处理失败: {e}")
 

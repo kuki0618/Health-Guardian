@@ -10,9 +10,9 @@ router = APIRouter(prefix="/calendar", tags=["calendar"])
 def get_calendar_service():
     return CalendarService()
 
-@router.get("/{userId}/{calendarId}/events", response_model=CalendarEventsResponse)
+@router.get("/{unionid}/{calendarId}/events", response_model=CalendarEventsResponse)
 async def get_calendar_events(
-    userId: str,
+    unionid: str,
     calendarId: str,
     timeMin: Optional[str] = Query(None, description="beginning time"),
     timeMax: Optional[str] = Query(None, description="end time"),
@@ -25,7 +25,7 @@ async def get_calendar_events(
     
     try:
         request = CalendarRequest(
-            userId=userId,
+            unionid=unionid,
             calendarId=calendarId,
             timeMin=timeMin,
             timeMax=timeMax,
@@ -40,15 +40,15 @@ async def get_calendar_events(
             detail=f"Calendar API query failed: {str(e)}"
         )
 
-@router.get("/{userId}/availability", response_model=bool)
+@router.get("/{unionid}/availability", response_model=bool)
 async def check_user_availability(
-    userId: str,
+    unionid: str,
     duration_minutes: int = Query(60, description="check duration (minutes)"),
     calendar_service: CalendarService = Depends(get_calendar_service)
 ):
     #检查用户是否有空
     try:
-        is_available = await calendar_service.check_user_availability(userId, duration_minutes)
+        is_available = await calendar_service.check_user_availability(unionid, duration_minutes)
         return is_available
         
     except Exception as e:

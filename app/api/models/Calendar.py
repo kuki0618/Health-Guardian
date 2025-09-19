@@ -5,7 +5,7 @@ class CalendarEventsResponse(BaseModel):
     events: Optional[List[dict]] = None
     
 class CalendarRequest(BaseModel):
-    userId:str
+    unionid:str
     calendarId:str
     timeMin: Optional[str] = None
     timeMax: Optional[str] = None

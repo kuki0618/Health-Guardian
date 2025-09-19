@@ -2,8 +2,8 @@ import httpx
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
-from dependencies.dingtalk_token import get_dingtalk_access_token
-from app.models.sport import UserStepResponse, UserStepRequest
+from api.dependencies.dingtalk_token import get_dingtalk_access_token
+from api.models.steps import UserStepResponse, UserStepRequest
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,7 @@ class FreeBusyRequest(BaseModel):
     endTime: str  # ½áÊøÊ±¼ä
 
 class FreeBusyResponse(BaseModel):
-    user_id: str
+    userId: str
     date: str
     start_datetime: str
     end_datetime: str

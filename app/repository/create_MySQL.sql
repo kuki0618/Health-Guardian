@@ -3,8 +3,16 @@ CREATE TABLE employees (
     name VARCHAR(50) NOT NULL, -- 姓名
     title VARCHAR(50), -- 职位
     hobby VARCHAR(100), -- 爱好
-    age INT -- 年龄
+    age INT, -- 年龄
 );
+
+TRUNCATE TABLE employees;
+
+ALTER TABLE online_status AUTO_INCREMENT = 1;
+
+ALTER TABLE employees ADD COLUMN unionid VARCHAR(100) NOT NULL
+
+DROP TABLE IF EXISTS employees;
 
 INSERT INTO
     employees
@@ -36,42 +44,21 @@ VALUES (
         26
     );
 
-'''
-CREATE TABLE clock_records (
-    record_id INT AUTO_INCREMENT PRIMARY KEY, -- 序号（自增主键）
-    date DATE NOT NULL, -- 日期
-    employee_id INT NOT NULL, -- 员工ID（外键）
-    clock_in_time DATETIME, -- 签到时间
-    clock_out_time DATETIME, -- 签退时间
-    FOREIGN KEY (employee_id) REFERENCES employees (userid)
-);
-
-INSERT INTO
-    clock_records (
-        date,
-        employee_id,
-        clock_in_time,
-        clock_out_time
-    )
-VALUES (
-        '2023-09-06',
-        1552,
-        '08:45:00',
-        '18:45:00'
-    ),
-    (
-        '2023-09-06',
-        1553,
-        '09:45:00',
-        '20:45:00'
-    );
-'''
-
 CREATE TABLE online_status (
     id INT AUTO_INCREMENT PRIMARY KEY,
     userid VARCHAR(255) NOT NULL,
-    date DATE NOT NULL
+    date DATE NOT NULL FOREIGN KEY (userid) REFERENCES employees (userid) ON DELETE CASCADE
 );
+
+ALTER TABLE online_status
+ADD UNIQUE KEY unique_user_date (userid, date);
+
+ALTER TABLE online_status AUTO_INCREMENT = 1;
+
+ALTER TABLE online_status
+ADD CONSTRAINT fk_online_status_userid FOREIGN KEY (userid) REFERENCES employees (userid) ON DELETE CASCADE;
+
+DROP TABLE IF EXISTS online_status
 
 CREATE TABLE online_time_periods (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -82,6 +69,10 @@ CREATE TABLE online_time_periods (
     FOREIGN KEY (task_id) REFERENCES online_status (id) ON DELETE CASCADE
 );
 
+TRUNCATE TABLE online_time_periods
+
+DROP TABLE IF EXISTS online_time_periods;
+
 CREATE TABLE health_message (
     id INT AUTO_INCREMENT PRIMARY KEY,
     task_id INT NOT NULL, -- 外键，关联到主表的任务ID
@@ -91,6 +82,10 @@ CREATE TABLE health_message (
     FOREIGN KEY (task_id) REFERENCES online_status (id) ON DELETE CASCADE
 );
 
+TRUNCATE TABLE health_message;
+
+DROP TABLE IF EXISTS health_message;
+
 CREATE TABLE attendance_data (
     id INT AUTO_INCREMENT PRIMARY KEY,
     task_id INT NOT NULL, -- 外键，关联到主表的任务ID
@@ -99,6 +94,10 @@ CREATE TABLE attendance_data (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (task_id) REFERENCES online_status (id) ON DELETE CASCADE
 );
+
+TRUNCATE TABLE attendance_data;
+
+DROP TABLE IF EXISTS attendance_data;
 
 INSERT INTO
     online_status (userid, date)

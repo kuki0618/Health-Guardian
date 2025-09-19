@@ -8,4 +8,10 @@ class UserDetailResponse(BaseModel):
     hobby: Optional[str] = None
     age: Optional[str] = None
     unionid: str
+    '''
+    {"userid":"manager4585",
+    "name":"173******04",
+    "title":"","hobby":"","age":"",
+    "unionid":"6kPiPK8K1yV8lDlRc50TKFwiEiE"}
+    '''
     

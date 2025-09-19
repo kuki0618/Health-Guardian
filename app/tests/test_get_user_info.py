@@ -9,9 +9,9 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 app_dir = os.path.dirname(current_dir) 
 sys.path.insert(0, app_dir)  
 
-from services.dingtalk import get_user_info 
+from api.endpoints import user
 
-app.include_router(get_user_info.router)
+app.include_router(user.router)
     
 if __name__ == "__main__":
     import uvicorn

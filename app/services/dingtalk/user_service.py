@@ -2,6 +2,9 @@ import httpx
 import json
 import logging
 from typing import Dict, Any
+import pymysql.cursors
+
+from core import database
 from api.dependencies.dingtalk_token import get_dingtalk_access_token
 from api.models.user import UserDetailResponse
 
@@ -73,3 +76,33 @@ class UserService:
         )
         
         return user_info
+    
+    async def add_employee_info(
+        self,
+        item: dict,
+        conn
+    ):
+        try:
+            cursor = conn.cursor(pymysql.cursors.DictCursor)
+            
+            # 构建插入语句
+            columns = ", ".join(item.keys())
+            placeholders = ", ".join(["%s"] * len(item))
+            values = tuple(item.values())
+            
+            query = f"INSERT INTO employees ({columns}) VALUES ({placeholders})"
+            cursor.execute(query, values)
+            conn.commit()
+
+        except Exception as e:
+        # 发生错误时回滚
+            conn.rollback()
+            raise e
+        finally:
+            cursor.close()
+        # 获取插入的ID
+        '''
+        if cursor.lastrowid:
+            return {"message": "Item created", "id": cursor.lastrowid}
+        return {"message": "Item created"}
+        '''

@@ -3,16 +3,24 @@ from typing import List, Optional, Dict, Any
 from datetime import date
 
 class StepInfo(BaseModel):
-    step_count: int  # ²½Êı
-    stat_date:int    #¸ñÊ½£º20200907
+    step_count: int  # æ­¥æ•°
+    stat_date:int    #æ ¼å¼ï¼š20200907
 
 class UserStepResponse(BaseModel):
     stepinfo_list: Optional[List[StepInfo]] = None
+    class Config:
+        schema_extra = {
+            "example":
+            {"stepinfo_list":
+             [{"step_count":10100,"stat_date":20250916},
+              {"step_count":2451,"stat_date":20250917}]
+            }
+        }
 
 class UserStepRequest(BaseModel):
-    object_id: str  # ÓÃ»§ID
-    stat_dates: str  # ÈÕÆÚ£¬¸ñÊ½ÎªYYYY-MM-DD
-    type: int = 0  # 0±íÊ¾²½Êı
+    object_id: str  # ç”¨æˆ·ID
+    stat_dates: str  # æ—¥æœŸï¼Œæ ¼å¼ä¸ºYYYY-MM-DD
+    type: int = 0  # 0è¡¨ç¤ºæ­¥æ•°
 
     class Config:
         schema_extra = {

@@ -76,7 +76,7 @@ async def test_add_attendance_records(
     #测试添加考勤记录到数据库
     try:
         # 调用服务层的方法
-        await attendance_service.add_attendence_info(mock_records, conn)
+        await attendance_service.add_attendance_info(mock_records, conn)
         return {
             "message": "attendance records add successed",
             "count": len(mock_records),

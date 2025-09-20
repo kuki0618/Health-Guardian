@@ -2,13 +2,14 @@ import pymysql
 from dbutils.pooled_db import PooledDB
 import os
 from typing import Generator
+from core import config
 
 db_config = {
-    "host": os.getenv("DB_HOST","localhost"),
-    "user": os.getenv("DB_USER","root"),
-    "password": os.getenv("DB_PASSWORD","123456"),
-    "database": os.getenv("DB_NAME","my_db"),
-    "port": int(os.getenv("DB_PORT", 3306)),
+    "host":config.DB_HOST,
+    "user": config.DB_USER,
+    "password": config.DB_PASSWORD,
+    "database": config.DB_NAME,
+    "port": config.DB_PORT,
     "charset": "utf8mb4",
     "autocommit": True
 }

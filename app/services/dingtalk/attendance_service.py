@@ -134,7 +134,7 @@ class AttendanceService:
                 error=str(e)
             )
         
-    async def add_attendence_info(
+    async def add_attendance_info(
         self,
         all_data:List[dict],
         conn

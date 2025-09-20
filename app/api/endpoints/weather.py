@@ -2,13 +2,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from services.amap.weather_service import WeatherService
 from api.models.weather import WeatherResponse
-import os
-from dotenv import load_dotenv
+from core import config
 
-load_dotenv()
+AMAP_API_KEY =config.AMAP_API_KEY
 
-AMAP_API_KEY = os.getenv("AMAP_API_KEY")
-    
 router = APIRouter(prefix="/weather", tags=["weather"])
 
 # 依赖项：获取天气服务实例

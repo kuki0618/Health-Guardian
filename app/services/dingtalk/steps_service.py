@@ -2,6 +2,7 @@ import httpx
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
+import pymysql.cursors
 from api.dependencies.dingtalk_token import get_dingtalk_access_token
 from api.models.steps import UserStepResponse, UserStepRequest
 
@@ -52,25 +53,22 @@ class SportService:
         # 插入用户步数信息
         cursor = conn.cursor(pymysql.cursors.DictCursor)
         try:
-            step = data["stepinfo_list"]['step_count']
+            steps = data["stepinfo_list"]['step_count']
             date = data["stepinfo_list"]['stat_date']
         
-            select_query = """  
-            SELECT id FROM online_status WHERE userid = %s AND date = %s
-            """
-            cursor.execute(select_query, (userId, date))
+            check_sql = "SELECT id FROM online_status WHERE userid = %s AND date = %s"
+            cursor.execute(check_sql, (userId, date))
             existing_record = cursor.fetchone()
-
+            
             if existing_record:
-                task_id = existing_record['userId']
-                insert_query = f"""
-                    INSERT INTO online_status (steps) 
-                    VALUES (%s)
-                    """
-                cursor.execute(insert_query, (step,))
+                # 2. 记录存在，直接更新
+                update_sql = "UPDATE online_status SET steps = %s WHERE userid = %s AND date = %s"
+                cursor.execute(update_sql, (steps, userId, date))
             else:
-                logger.error(f"insert steps info fail: {str(e)}")
-                raise Exception(f"insert steps info fail: {str(e)}")
+                # 3. 记录不存在，插入新记录
+                insert_sql = "INSERT INTO online_status (userid, date, steps) VALUES (%s, %s, %s)"
+                cursor.execute(insert_sql, (userId, date, steps))
+            
             conn.commit()
         except Exception as e:
             logger.error(f"insert steps info fail: {str(e)}")

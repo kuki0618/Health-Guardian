@@ -11,10 +11,9 @@ router = APIRouter(prefix="/sport_info", tags=["sport_info"])
 def get_sport_service():
     return SportService()
 
-@router.get("/{object_id}/{stat_date}", response_model=UserStepResponse)
+@router.get("/{object_id}", response_model=UserStepResponse)
 async def get_user_steps(
     object_id: str,
-    stat_date: str,
     type: int = Query(0),
     sport_service: SportService = Depends(get_sport_service)
 ):
@@ -22,9 +21,10 @@ async def get_user_steps(
     #获取用户步数信息
     #- 查询指定日期的用户运动步数
     try:
+        stat_dates="20250916,20250917"
         request = UserStepRequest(
             object_id=object_id,
-            stat_dates=stat_date,
+            stat_dates=stat_dates,
             type=type
         )
         result = await sport_service.get_user_steps(request)

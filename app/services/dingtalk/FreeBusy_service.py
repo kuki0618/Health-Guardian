@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any
 from api.dependencies.dingtalk_token import get_dingtalk_access_token
 from api.models.FreeBusy import FreeBusyRequest, FreeBusyResponse
+from utils.find_userId_by_unionid import find_userid_by_unionid
 import pymysql.cursors
 
 logger = logging.getLogger(__name__)
@@ -95,15 +96,18 @@ class FreeBusyService:
         cursor = conn.cursor(pymysql.cursors.DictCursor)
         try:
             for data in data_list:
-                user_id = find_userid(data['user_id'])
+                userId = await find_userid_by_unionid(data['userId'],conn)
+                if not userId:
+                    logger.error(f"user {data['userId']} not found")
+                    continue
                 date = data['date']
                 start_datetime = data['start_datetime']
                 end_datetime = data['end_datetime']
             
-                select_query = """
+                select_query = """  
                 SELECT id FROM online_status WHERE userid = %s AND date = %s
                 """
-                cursor.execute(select_query, (user_id, date))
+                cursor.execute(select_query, (userId, date))
                 existing_record = cursor.fetchone()
 
                 if existing_record:
@@ -115,11 +119,11 @@ class FreeBusyService:
                     INSERT INTO online_status (userid, date) 
                     VALUES (%s, %s)
                     """
-                    cursor.execute(insert_main_query, (user_id, date))
+                    cursor.execute(insert_main_query, (userId, date))
                     
                     # 获取刚插入的主键ID
                     task_id = cursor.lastrowid
-                
+                    
                 # 第二步：插入子表 online_time_periods
                 insert_period_query = f"""
                 INSERT INTO online_time_periods (task_id, start_datetime, end_datetime) 

@@ -18,27 +18,11 @@ async def get_user_free_busy_status(
     userId:str,
     schedule_service: FreeBusyService = Depends(get_schedule_service)
 ):
-    
     #获取用户忙闲状态
     #查询最近2小时的日程信息
-  
     try:
-        # 设置查询时间范围（当前时间到2小时前）
-        time_max = datetime.now()
-        time_min = time_max - timedelta(hours=2)
-        
-        # 格式化时间字符串（ISO 8601格式）
-        startTime = time_min.strftime("%Y-%m-%dT%H:%M:%S") + "+08:00"
-        endTime = time_max.strftime("%Y-%m-%dT%H:%M:%S") + "+08:00"
-
-        request = FreeBusyRequest(
-            userIds=[userId],
-            startTime=startTime,
-            endTime=endTime
-        )
-        result = await schedule_service.get_user_free_busy_status(request)
+        result = await schedule_service.get_user_free_busy_now_status(userId)
         return result
-        
     except Exception as e:
         raise HTTPException(
             status_code=500, 

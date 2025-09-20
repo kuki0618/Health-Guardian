@@ -8,6 +8,7 @@ from core import database
 from api.dependencies.dingtalk_token import get_dingtalk_access_token
 from api.models.user import UserDetailResponse
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class UserService:
@@ -15,12 +16,12 @@ class UserService:
         self.client = httpx.AsyncClient(timeout=30.0)
     
     async def get_user_details(self, userid: str) -> UserDetailResponse:
-        #»ñÈ¡ÓÃ»§ÏêÇé - ·şÎñ²ã·½·¨
+        #è·å–ç”¨æˆ·è¯¦æƒ… - æœåŠ¡å±‚æ–¹æ³•
         try:
             access_token = await get_dingtalk_access_token()
             logger.info(f"get access token success: {access_token}")
             
-            # µ÷ÓÃ¶¤¶¤API
+            # è°ƒç”¨é’‰é’‰API
             url = "https://oapi.dingtalk.com/topapi/v2/user/get"
             data = {
                 "userid": userid,
@@ -36,12 +37,12 @@ class UserService:
                 response_data = response.json()
                 logger.debug(f"API response: {json.dumps(response_data, ensure_ascii=False, indent=2)}")
                 
-                # ÑéÖ¤ÏìÓ¦
+                # éªŒè¯å“åº”
                 if response_data.get('errcode') != 0:
                     error_msg = response_data.get('errmsg', 'Unknown error')
                     raise Exception(f"API fail: {error_msg}")
                 
-                # ×ª»»Êı¾İ¸ñÊ½
+                # è½¬æ¢æ•°æ®æ ¼å¼
                 user_info = self._transform_user_data(response_data)
                 return user_info
                 
@@ -56,16 +57,16 @@ class UserService:
             raise
     
     def _transform_user_data(self, response_data: Dict[str, Any]) -> UserDetailResponse:
-        #×ª»»ÓÃ»§Êı¾İ¸ñÊ½ - ÒµÎñÂß¼­
+        #è½¬æ¢ç”¨æˆ·æ•°æ®æ ¼å¼ - ä¸šåŠ¡é€»è¾‘
         result = response_data.get("result", {})
         
-        # ´¦Àíextension×Ö¶Î
+        # å¤„ç†extensionå­—æ®µ
         extension_data = {}
         if "extension" in result:
-           extension_data = result.pop("extension")  # É¾³ıextension²¢»ñÈ¡ÆäÄÚÈİ
-           result.update(extension_data)  # ½«extensionÄÚÈİºÏ²¢µ½resultÖĞ
+           extension_data = result.pop("extension")  # åˆ é™¤extensionå¹¶è·å–å…¶å†…å®¹
+           result.update(extension_data)  # å°†extensionå†…å®¹åˆå¹¶åˆ°resultä¸­
         
-        # ´´½¨ÓÃ»§ĞÅÏ¢¶ÔÏó
+        # åˆ›å»ºç”¨æˆ·ä¿¡æ¯å¯¹è±¡
         user_info = UserDetailResponse(
             userid=result.get("userid"),
             name=result.get("name"),
@@ -85,24 +86,25 @@ class UserService:
         try:
             cursor = conn.cursor(pymysql.cursors.DictCursor)
             
-            # ¹¹½¨²åÈëÓï¾ä
+            # æ„å»ºæ’å…¥è¯­å¥
             columns = ", ".join(item.keys())
             placeholders = ", ".join(["%s"] * len(item))
             values = tuple(item.values())
-            
-            query = f"INSERT INTO employees ({columns}) VALUES ({placeholders})"
-            cursor.execute(query, values)
-            conn.commit()
 
+            # æ£€æŸ¥æ˜¯å¦å·²å­˜åœ¨
+            check_query = "SELECT id FROM employees WHERE userid = %s"
+            cursor.execute(check_query, (item['userid'],))
+            existing = cursor.fetchone()
+            if existing:
+                logger.info(f"ç”¨æˆ· {item['userid']}ä¿¡æ¯å·²å­˜åœ¨")
+            else:
+                query = f"INSERT INTO employees ({columns}) VALUES ({placeholders})"
+                cursor.execute(query, values)
+                logger.info(f"ç”¨æˆ· {item['userid']}ä¿¡æ¯æ·»åŠ æˆåŠŸ")
+            conn.commit()
         except Exception as e:
-        # ·¢Éú´íÎóÊ±»Ø¹ö
+        # å‘ç”Ÿé”™è¯¯æ—¶å›æ»š
             conn.rollback()
             raise e
         finally:
             cursor.close()
-        # »ñÈ¡²åÈëµÄID
-        '''
-        if cursor.lastrowid:
-            return {"message": "Item created", "id": cursor.lastrowid}
-        return {"message": "Item created"}
-        '''

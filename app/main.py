@@ -1,186 +1,69 @@
-import os
-import sys
-from pathlib import Path
-
-# Ìí¼ÓÏîÄ¿¸ùÄ¿Â¼µ½PythonÂ·¾¶
-current_dir = Path(__file__).parent
-sys.path.append(str(current_dir))
-
+ï»¿import logging
 from fastapi import FastAPI
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
-from typing import List
-from datetime import datetime,timedelta
-import logging
+from contextlib import asynccontextmanager
 
-from services.dingtalk import get_user_info,get_attendence,get_ifFree,get_schedule_list,get_sport_info,get_weather,send_message
-from repository import action
-from services.dingtalk import send_message 
-from utils.change_time_format import change_time_format
-from models import models
+from core import config, database
+from services.dingtalk.user_service import UserService
+from services.scheduler.scheduler_service import SchedulerService
+from jobs.attendance_job import AttendanceJob
+from jobs.status_job import StatusJob
+from core import database
+from api.endpoints import attendance, weather, user, calendar, freebusy, steps
 
+# é…ç½®æ—¥å¿—
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
-
-attendance_manager = get_attendence.AttendanceManager()
-
-# ´´½¨Á½¸öµ÷¶ÈÆ÷ÊµÀı
-scheduler_status = AsyncIOScheduler()
-scheduler_attendance = AsyncIOScheduler()
-
-# È«¾Ö´æ´¢ÓÃ»§Êı¾İ
-@app.on_event("startup")
-async def startup_event():
-    try:
-        logger.info("Æô¶¯Ó¦ÓÃ³õÊ¼»¯...")
-        # µÚÒ»²½£ºÏÈ»ñÈ¡ËùÓĞÓÃ»§Êı¾İ
-        userids = ["manager4585","604157341328085868","03366627182021511253"]
-        
-        for userid in userids:
-            try:
-                result = get_user_info.get_user_details(userid)
-                action.create_item(table_name="employees", item=result)
-                logger.info(f"³É¹¦»ñÈ¡ÓÃ»§ {userid} Êı¾İ")
-            except Exception as e:
-                logger.error(f"»ñÈ¡ÓÃ»§ {userid} Êı¾İÊ§°Ü: {e}")
-        
-        # µÚ¶ş²½£ºÓÃ»§Êı¾İ¾ÍĞ÷ºó£¬ÔÙÆô¶¯¶¨Ê±ÈÎÎñ
-        
-        # Æô¶¯×´Ì¬¼ì²éµ÷¶ÈÆ÷
-        scheduler_status.add_job(
-            conditional_status,
-            trigger=IntervalTrigger(hours=1),
-            replace_existing=True,
-            args=[userids]  # ¹Ø¼ü£º´«µİÓÃ»§Êı¾İ¸øÈÎÎñº¯Êı
-        )
-        
-        if not scheduler_status.running:
-            scheduler_status.start()
-        
-        # Æô¶¯¿¼ÇÚ¼ì²éµ÷¶ÈÆ÷
-        scheduler_attendance.add_job(
-            conditional_attendance,
-            trigger=IntervalTrigger(hours=1),
-            replace_existing=True,
-            args=[userids]  # ¹Ø¼ü£º´«µİÓÃ»§Êı¾İ¸øÈÎÎñº¯Êı
-        )
-        
-        if not scheduler_attendance.running:
-            scheduler_attendance.start()
-           
-        logger.info("µ÷¶ÈÆ÷Æô¶¯³É¹¦")
-        
-    except Exception as e:
-        logger.error(f"Æô¶¯Ê§°Ü: {e}")
-        raise
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("¹Ø±ÕÓ¦ÓÃ...")
-    if scheduler_status.running:
-        scheduler_status.shutdown()
-    if scheduler_attendance.running:
-        scheduler_attendance.shutdown()
-
-#¼ì²éÓÃ»§ÊÇ·ñÓ¦¸ÃÇ©µ½
-def conditional_attendance(userids:List[str]):
-
-    now = datetime.datetime.now()
-    current_hour = now.hour
-    start_time = current_hour  # 08:00-12:00
-    end_time = current_hour + 1
-    for userid in userids:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # å¯åŠ¨åº”ç”¨
+    logger.info("åº”ç”¨å¯åŠ¨ä¸­...")
+    
+    # åˆå§‹åŒ–æ•°æ®åº“
+    await database.init_db()
+    
+    # åˆå§‹åŒ–ç”¨æˆ·æ•°æ®
+    user_service = UserService()
+    logger.info(f"è·å–å¹¶ä¿å­˜ä»¥ä¸‹ç”¨æˆ·ä¿¡æ¯: {config.USER_IDS}")
+    for userid in config.USER_IDS:
         try:
-            if get_attendence.attendance_manager.should_check_in(userid,start_time,end_time):
-                result = get_attendence.process_attendance_for_user(userid)
-                if result["action_taken"] and result["checked"]:
-                #ÔÚÔ­º¯ÊıÖĞ·µ»ØĞÅÏ¢±ê×¢ºÃÇ©µ½»¹ÊÇÇ©ÍË£¬µ«ÊÇ¶¼Ğ´ÔÚÒ»¸ö±íÀï
-                    action.add_attendence_info(result["data"])
-                    get_attendence.attendance_manager.mark_checked_in(userid)
-            elif get_attendence.attendance_manager.should_check_out(userid):
-                result = get_attendence.process_attendance_for_user(userid)
-                if result["action_taken"] and result["checked"]:
-                #ÔÚÔ­º¯ÊıÖĞ·µ»ØĞÅÏ¢±ê×¢ºÃÇ©µ½»¹ÊÇÇ©ÍË£¬µ«ÊÇ¶¼Ğ´ÔÚÒ»¸ö±íÀï
-                    action.add_attendence_info(result["data"])
-                    get_attendence.attendance_manager.mark_checked_out(userid)
-            logger.info(f" {userid} ¿¼ÇÚ´¦Àí³É¹¦")
+            user_info = await user_service.get_user_details(userid)
+            user_service.add_employee_info(user_info,conn=database.get_db())
+            # ä¿å­˜ç”¨æˆ·ä¿¡æ¯åˆ°æ•°æ®åº“
+            logger.info(f"ç”¨æˆ· {userid} æ•°æ®åˆå§‹åŒ–æˆåŠŸ")
         except Exception as e:
-            logger.error(f"ÓÃ»§ {userid} ¿¼ÇÚ´¦ÀíÊ§°Ü: {e}")
+            logger.error(f"ç”¨æˆ· {userid} æ•°æ®åˆå§‹åŒ–å¤±è´¥: {e}")
+    
+    # åˆå§‹åŒ–è°ƒåº¦å™¨
+    attendance_job = AttendanceJob()
+    status_job = StatusJob()
+    scheduler_service = SchedulerService(attendance_job, status_job)
+    
+    await scheduler_service.start_schedulers()
+    app.state.scheduler_service = scheduler_service
+    
+    yield
+    
+    # å…³é—­åº”ç”¨
+    logger.info("åº”ç”¨å…³é—­ä¸­...")
+    await scheduler_service.shutdown_schedulers()
+    await database.close_db()
 
-#¼ì²éÓÃ»§ÊÇ·ñÓ¦¸Ã²éÑ¯¹¤×÷×´Ì¬
-def conditional_status(userids: List[str]):
-    for userid in userids:
-        try:
-        #Èç¹ûÓÃ»§ÒÑ¾­Ç©µ½µ«ÊÇÃ»ÓĞÇ©ÍË£¬ÄÇÃ´¾Í²éÑ¯ÓÃ»§ÊÇ·ñÔÚÏß
-            if attendance_manager.daily_status[userid]["checked_in"] == True and attendance_manager.daily_status[userid]["checked_out"] == False:
-                
-                result = get_ifFree.get_user_free_busy_status(userid)
-                #Èç¹ûÔÚÏß£¬ÄÇÃ´¾Í²åÈëÊı¾İ
-                if len(result)!=0:
-                    action.insert_online_item(father_table_name="online_status",son_table_name="online_time_periods",data_list=result)
-                    #Èç¹ûÓÃ»§ÔÚÏßÊ±¼ä³¬¹ı90·ÖÖÓ£¬ÄÇÃ´¾Í·¢ËÍÏûÏ¢
-                    if change_time_format(result["start_time"],result["end_time"])>90 * 60:
-                        user_msg = action.get_item_by_id(userid,timeable = "employees")
-                        '''
-                        "employee_info":{"userid":"manager4585","name":Ğ¡ÕÔ,"title":"Ëã·¨¹¤³ÌÊ¦","hobby":"É¢²½",¡°age¡±:"25"},
-                        '''
-                        whether_msg = get_weather(os.getenv("AMAP_API_KEY"))
-                        '''
-                        "weather":{
-                        "ÎÂ¶È(¡æ)": weather_data["lives"][0]["temperature"],
-                        "ÌìÆø×´¿ö": weather_data["lives"][0]["weather"],
-                        "Êª¶È(%)": weather_data["lives"][0]["humidity"],
-                        "·çÁ¦": weather_data["lives"][0]["windpower"],
-                        }
-                        '''
-                        #Éè¼ÆÇ°ÆßÌìµÄÊ±¼äÊı¾İ
-                        target_times = []
-                        for i in range(7):
-                            date = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
-                            target_times.append(date)
-                        before_msg = action.get_online_time_periods(userid,target_times)
-                        '''
-                        "work_status":{
-                            "2023-10-01": [
-                                ("2023-10-01 09:00:00", "2023-10-01 12:00:00"),
-                                ("2023-10-01 14:00:00", "2023-10-01 18:00:00")
-                            ],
-                            "2023-10-02": [
-                                ("2023-10-02 08:30:00", "2023-10-02 17:30:00")
-                            ]
-                        }  
-                        '''
-                        all_msg = {"employee_info":{**user_msg}, "weather":{**whether_msg}, "work_status":{**before_msg}} 
-                        #Í¨¹ıº¯Êı´«¸ø´óÄ£ĞÍ
-                        health_msg = models.create_message(all_msg)
-                        #µ÷ÓÃ·¢ËÍÏûÏ¢º¯Êı·¢ËÍÏûÏ¢
-                        health_model = send_message.AsyncSendRequest(userid_list=[userid],msg_type="text",content=health_msg)
-                        send_message.send_message(health_model)
-                        #²åÈë½¡¿µÌáĞÑÊı¾İµ½ÌáĞÑ±í
-                        action.insert_health_msg(user_id=userid,msg=health_msg,Time=datetime.now())
-        except Exception as e:
-            logger.error(f"·¢ËÍ½¡¿µÌáĞÑÊ§°Ü: {e}")
+# åˆ›å»ºFastAPIåº”ç”¨
+app = FastAPI(
+    title="Health Guardian API",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
+# æ³¨å†Œè·¯ç”±
+app.include_router(attendance.router)
+app.include_router(weather.router)
+app.include_router(user.router)
+app.include_router(calendar.router)
+app.include_router(freebusy.router)
+app.include_router(steps.router)
 
-            
-            
-'''
-                        "employee_info":{"userid":"manager4585","name":Ğ¡ÕÔ,"title":"Ëã·¨¹¤³ÌÊ¦","hobby":"É¢²½",¡°age¡±:"25"},
-                        "weather":{
-                        "ÎÂ¶È(¡æ)": weather_data["lives"][0]["temperature"],
-                        "ÌìÆø×´¿ö": weather_data["lives"][0]["weather"],
-                        "Êª¶È(%)": weather_data["lives"][0]["humidity"],
-                        "·çÁ¦": weather_data["lives"][0]["windpower"],
-                        }
-                        "work_status":{
-                            "2023-10-01": [
-                                ("2023-10-01 09:00:00", "2023-10-01 12:00:00"),
-                                ("2023-10-01 14:00:00", "2023-10-01 18:00:00")
-                            ],
-                            "2023-10-02": [
-                                ("2023-10-02 08:30:00", "2023-10-02 17:30:00")
-                            ]
-                        }  
-                        '''
+@app.get("/")
+async def root():
+    return {"message": "Health Guardian API is running"}

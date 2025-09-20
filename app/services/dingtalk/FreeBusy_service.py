@@ -48,7 +48,7 @@ class FreeBusyService:
                 flat_data_list.append(flat_data)
         return flat_data_list
     
-    async def get_user_free_busy_status(self,request:FreeBusyRequest)-> FreeBusyResponse:
+    async def get_user_free_busy_status(self,request:FreeBusyRequest)-> List[FreeBusyResponse]:
 
             access_token = await get_dingtalk_access_token()
 
@@ -88,6 +88,36 @@ class FreeBusyService:
             except Exception as e:
                logger.error(f"quary process fail: {str(e)}")
                raise Exception(f"quary process fail: {str(e)}") from e
+            
+    async def get_user_free_busy_now_status(
+            self,
+            userId:str
+        )-> List[FreeBusyResponse]:
+    
+        #获取用户忙闲状态
+        #查询最近2小时的日程信息
+    
+        try:
+            # 设置查询时间范围（当前时间到2小时前）
+            time_max = datetime.now()
+            time_min = time_max - timedelta(hours=2)
+            
+            # 格式化时间字符串（ISO 8601格式）
+            startTime = time_min.strftime("%Y-%m-%dT%H:%M:%S") + "+08:00"
+            endTime = time_max.strftime("%Y-%m-%dT%H:%M:%S") + "+08:00"
+
+            request = FreeBusyRequest(
+                userIds=[userId],
+                startTime=startTime,
+                endTime=endTime
+            )
+            result = await self.get_user_free_busy_status(request)
+            return result
+            
+        except Exception as e:
+               logger.error(f"quary process fail: {str(e)}")
+               raise Exception(f"quary process fail: {str(e)}") from e
+        
     async def insert_freebusy_record(
         self,
         data_list: List[dict],

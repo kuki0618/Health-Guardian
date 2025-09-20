@@ -2,6 +2,8 @@ import httpx
 from typing import Dict, Any
 from api.dependencies.dingtalk_token import get_dingtalk_access_token
 from api.models.message import AsyncSendRequest
+from datetime import datetime
+import pymysql.cursors
 
 class SendMessageService:
     def __init__(self):
@@ -49,3 +51,57 @@ class SendMessageService:
             raise Exception(f"internet request error: {str(e)}")
         except Exception as e:
             raise Exception(f"send message error: {str(e)}")
+        
+    async def insert_health_message(
+            self, 
+            userId: str, 
+            health_msg: str, 
+            time: datetime,
+            conn):
+        # 插入健康消息到数据库
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        try:
+            date= time.strftime("%Y-%m-%d")
+            select_query = """  
+            SELECT id FROM online_status WHERE userid = %s AND date = %s
+            """
+            cursor.execute(select_query, (userId, date))
+            existing_record = cursor.fetchone()
+
+            if existing_record:
+                task_id = existing_record['id']
+                logger.info(f"record exist,id: {task_id}")
+            else:
+            # 第一步：插入主表 online_status，获取attendance_id
+                insert_main_query = f"""
+                INSERT INTO online_status (userid, date) 
+                VALUES (%s, %s)
+                """
+                cursor.execute(insert_main_query, (userId, date))
+            
+            # 获取刚插入的主键ID
+            task_id = cursor.lastrowid
+                
+            # 第二步：插入子表 online_time_periods
+            insert_period_query = f"""
+            INSERT INTO health_messages (task_id, msg, date_time) 
+            VALUES (%s, %s, %s)
+            """
+            
+            date_time = time.strftime("%Y-%m-%d %H:%M:%S")
+            
+            # 插入时间段数据
+            cursor.execute(insert_period_query, (
+                task_id,
+                health_msg,
+                date_time
+            ))
+        
+            # 提交事务
+            conn.commit()
+        except Exception as e:
+        # 发生错误时回滚
+            conn.rollback()
+            raise e
+        finally:
+            cursor.close()

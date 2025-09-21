@@ -62,7 +62,7 @@ class AttendanceManager:
         """判断是否应该调用签到api请求"""
         async with self.lock:
             
-            in_checkin_period = self._is_in_time_period(8,20)
+            in_checkin_period = self._is_in_time_period(8,22)
 
             return in_checkin_period
     
@@ -70,7 +70,7 @@ class AttendanceManager:
         """判断是否应该调用签退api请求"""
         async with self.lock:
             
-            in_checkout_period = self._is_in_time_period(18,20)
+            in_checkout_period = self._is_in_time_period(18,22)
 
             return in_checkout_period 
     

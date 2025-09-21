@@ -1,18 +1,36 @@
 from datetime import datetime, timedelta
 
-# ½«×Ö·û´®×ª»»Îªdatetime¶ÔÏó
+# å°†å­—ç¬¦ä¸²è½¬æ¢ä¸ºdatetimeå¯¹è±¡
 def change_time_format(time_str1:str,time_str2:str):
-    time_format = "%Y-%m-%d %H:%M:%S"
-    time1 = datetime.strptime(time_str1, time_format)
-    time2 = datetime.strptime(time_str2, time_format)
-    time_difference = time2 - time1
-    return time_difference.total_seconds() 
+    def parse_iso_time(time_str):
+        if time_str is None:
+            return None
+        # ç§»é™¤æ—¶åŒºä¿¡æ¯
+        if '+' in time_str:
+            time_str = time_str.split('+')[0]
+        elif 'Z' in time_str:
+            time_str = time_str.replace('Z', '')
+        
+        # æ›¿æ¢ T ä¸ºç©ºæ ¼
+        if 'T' in time_str:
+            time_str = time_str.replace('T', ' ')
+        
+        return datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
+    
+    time1 = parse_iso_time(time_str1)
+    time2 = parse_iso_time(time_str2)
+    
+    if time1 and time2:
+        time_difference = time2 - time1
+        return time_difference.total_seconds()
+    else:
+        return 0
 
-#»ñÈ¡±ê×¼¸ñÊ½µÄµ±Ç°Ê±¼ä
+#è·å–æ ‡å‡†æ ¼å¼çš„å½“å‰æ—¶é—´
 def get_current_time():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-#»ñÈ¡±ê×¼¸ñÊ½µÄµ±Ç°ÈÕÆÚ
+#è·å–æ ‡å‡†æ ¼å¼çš„å½“å‰æ—¥æœŸ
 def get_current_date():
     return datetime.now().strftime("%Y-%m-%d")
 

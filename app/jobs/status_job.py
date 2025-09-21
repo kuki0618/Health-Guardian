@@ -12,6 +12,7 @@ from core import config
 from api.models.FreeBusy import FreeBusyRequest
 from api.models.message import AsyncSendRequest,Message,TextContent
 from fastapi import Depends
+from utils.find_userId_by_unionid import find_unionid_by_userId
 
 logger = logging.getLogger(__name__)
 
@@ -33,19 +34,19 @@ class StatusJob:
         logger.info(f"检查用户状态并发送提醒，用户列表：{userids}")
         for userid in userids:
             try:
-                # 检查用户考勤状态
-                logger.info(f"检查用户 {userid} 考勤状态")            
+                # 检查用户考勤状态          
                 attendance_status = await self.attendance_service.attendance_manager.get_attendance_status(userid)
                 check_in_result = attendance_status["checked_in"]
                 check_out_result = attendance_status["checked_out"]
                 logger.info(f"检查到用户 {userid} 考勤状态，签到状态：{check_in_result},签退状态：{check_out_result}")
                 if check_in_result and not check_out_result:
-                    # 查询用户忙闲状态
-                    freebusy_result = await self.freebusy_service.get_user_free_busy_status(userid)
+
+                    logger.info(f"开始查询用户{userid}忙闲状态...")
+                    freebusy_result = await self.freebusy_service.get_user_free_busy_now_status(userid)
                     if freebusy_result != []:
                         
                         logger.info(f"检查到用户 {userid} 忙碌：{freebusy_result}")
-                        await self.freebusy_service.insert_freebusy_record(userid, freebusy_result)
+                        await self.freebusy_service.insert_freebusy_record(freebusy_result,conn=database.get_db_connection())
                         # 检查在线时长
                         online_duration = 0
                         for i in range(len(freebusy_result)):
@@ -54,6 +55,8 @@ class StatusJob:
                         if online_duration > 90 * 60:  # 90分钟
                             logger.info(f"检查到用户 {userid} 忙碌时长超过90分钟")
                             await self._send_health_alert(userid)
+                    else:
+                        logger.info(f"检查到用户{userid}暂时没有忙碌状态")
                 
             except Exception as e:
                 logger.error(f"用户 {userid} 状态检查失败: {e}")
@@ -62,6 +65,7 @@ class StatusJob:
         """发送健康提醒"""
         try:
             # 获取用户信息
+            logger.info("开始生成并发送健康提醒...")
             user_info = await self.user_service.get_user_details(userid)
             
             # 获取天气信息
@@ -72,8 +76,11 @@ class StatusJob:
                 (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") 
                 for i in range(7)
             ]
+
+            unionid = await find_unionid_by_userId(userid)
+
             request = FreeBusyRequest(
-                userIds=[userid],
+                userIds=[unionid],
                 startTime=target_dates[6],
                 endTime=target_dates[0]
             )

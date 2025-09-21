@@ -4,7 +4,8 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any
 from api.dependencies.dingtalk_token import get_dingtalk_access_token
 from api.models.FreeBusy import FreeBusyRequest, FreeBusyResponse
-from utils.find_userId_by_unionid import find_userid_by_unionid
+from utils.find_userId_by_unionid import find_unionid_by_userId,find_userid_by_unionid
+from repository import database
 import pymysql.cursors
 
 logger = logging.getLogger(__name__)
@@ -22,11 +23,11 @@ class FreeBusyService:
                 start = item['start']
                 if 'dateTime' in start:
                     start_time = item['start']['dateTime']
-                    # ¶¨Ê±ÊÂ¼ş£¬Æä¡°ÈÕÆÚ¡±¿ÉÒÔ´Ó dateTime ÖĞÌáÈ¡
-                    date = start_time.split('T')[0] # ´Ó '2024-09-20T10:00:00+08:00' ÖĞÌáÈ¡ '2024-09-20'
+                    # å®šæ—¶äº‹ä»¶ï¼Œå…¶â€œæ—¥æœŸâ€å¯ä»¥ä» dateTime ä¸­æå–
+                    date = start_time.split('T')[0] # ä» '2024-09-20T10:00:00+08:00' ä¸­æå– '2024-09-20'
                 elif 'date' in item['start']:
                     date = item['start']['date']
-                    start_time = None # È«ÌìÊÂ¼ş¿ÉÄÜÃ»ÓĞ¾ßÌå¿ªÊ¼Ê±¼äµã
+                    start_time = None # å…¨å¤©äº‹ä»¶å¯èƒ½æ²¡æœ‰å…·ä½“å¼€å§‹æ—¶é—´ç‚¹
 
                 end = item['end']
                 if 'dateTime' in end:
@@ -36,9 +37,9 @@ class FreeBusyService:
                 else:
                     end_time = None
 
-                # ´´½¨±âÆ½»¯µÄ×Öµä
+                # åˆ›å»ºæ‰å¹³åŒ–çš„å­—å…¸
                 flat_data = {
-                    # µÚÒ»²ãÊı¾İ
+                    # ç¬¬ä¸€å±‚æ•°æ®
                     'userId': userId,
                     "date":date,
                     'start_datetime': start_time,
@@ -53,25 +54,25 @@ class FreeBusyService:
             access_token = await get_dingtalk_access_token()
 
             
-            # ¹¹½¨ÇëÇóÊı¾İ
+            # æ„å»ºè¯·æ±‚æ•°æ®
             data = request.dict()
 
             
             url = f"https://api.dingtalk.com/v1.0/calendar/users/{request.userIds[0]}/querySchedule"
             headers = {
                 "Content-Type": "application/json",
-                "x-acs-dingtalk-access-token": access_token  # ¹Ø¼üĞŞ¸Ä£ºÊ¹ÓÃÕıÈ·µÄÍ·²¿
+                "x-acs-dingtalk-access-token": access_token  # å…³é”®ä¿®æ”¹ï¼šä½¿ç”¨æ­£ç¡®çš„å¤´éƒ¨
             }
             try:
                 
                 async with httpx.AsyncClient() as client:
                     response = await client.post(
                         url, headers=headers,json=data)
-                    #ÕâÀïÂß¼­ĞŞ¸Ä
+
                     if response.status_code == 200:
             
                         result = response.json()
-                    
+
                         if len(result["scheduleInformation"])!=0:
                             result = self.reschedule_data(result)
                             return result
@@ -93,21 +94,22 @@ class FreeBusyService:
             self,
             userId:str
         )-> List[FreeBusyResponse]:
-    
-        #»ñÈ¡ÓÃ»§Ã¦ÏĞ×´Ì¬
-        #²éÑ¯×î½ü2Ğ¡Ê±µÄÈÕ³ÌĞÅÏ¢
+        #è·å–ç”¨æˆ·å¿™é—²çŠ¶æ€
+        #æŸ¥è¯¢æœ€è¿‘2å°æ—¶çš„æ—¥ç¨‹ä¿¡æ¯
     
         try:
-            # ÉèÖÃ²éÑ¯Ê±¼ä·¶Î§£¨µ±Ç°Ê±¼äµ½2Ğ¡Ê±Ç°£©
+            # è®¾ç½®æŸ¥è¯¢æ—¶é—´èŒƒå›´ï¼ˆå½“å‰æ—¶é—´åˆ°2å°æ—¶å‰ï¼‰
             time_max = datetime.now()
             time_min = time_max - timedelta(hours=2)
             
-            # ¸ñÊ½»¯Ê±¼ä×Ö·û´®£¨ISO 8601¸ñÊ½£©
+            # æ ¼å¼åŒ–æ—¶é—´å­—ç¬¦ä¸²ï¼ˆISO 8601æ ¼å¼ï¼‰
             startTime = time_min.strftime("%Y-%m-%dT%H:%M:%S") + "+08:00"
             endTime = time_max.strftime("%Y-%m-%dT%H:%M:%S") + "+08:00"
 
+            unionid = await find_unionid_by_userId(userId,conn=database.get_db_connection())
+            logger.info(f"æŸ¥æ‰¾åˆ°{userId}çš„unionid:{unionid}")
             request = FreeBusyRequest(
-                userIds=[userId],
+                userIds=[unionid],
                 startTime=startTime,
                 endTime=endTime
             )
@@ -144,23 +146,23 @@ class FreeBusyService:
                     task_id = existing_record['id']
                     logger.info(f"record exist,id: {task_id}")
                 else:
-                # µÚÒ»²½£º²åÈëÖ÷±í online_status£¬»ñÈ¡attendance_id
+                # ç¬¬ä¸€æ­¥ï¼šæ’å…¥ä¸»è¡¨ online_statusï¼Œè·å–attendance_id
                     insert_main_query = f"""
                     INSERT INTO online_status (userid, date) 
                     VALUES (%s, %s)
                     """
                     cursor.execute(insert_main_query, (userId, date))
                     
-                    # »ñÈ¡¸Õ²åÈëµÄÖ÷¼üID
+                    # è·å–åˆšæ’å…¥çš„ä¸»é”®ID
                     task_id = cursor.lastrowid
                     
-                # µÚ¶ş²½£º²åÈë×Ó±í online_time_periods
+                # ç¬¬äºŒæ­¥ï¼šæ’å…¥å­è¡¨ online_time_periods
                 insert_period_query = f"""
                 INSERT INTO online_time_periods (task_id, start_datetime, end_datetime) 
                 VALUES (%s, %s, %s)
                 """
                 
-                # ´¦Àídatetime¸ñÊ½£¨ÒÆ³ıÊ±ÇøĞÅÏ¢£©
+                # å¤„ç†datetimeæ ¼å¼ï¼ˆç§»é™¤æ—¶åŒºä¿¡æ¯ï¼‰
                 def format_datetime(dt_str):
                     if dt_str and 'T' in dt_str:
                         if '+' in dt_str:
@@ -168,17 +170,17 @@ class FreeBusyService:
                         return dt_str.replace('T', ' ')
                     return dt_str
                 
-                # ²åÈëÊ±¼ä¶ÎÊı¾İ
+                # æ’å…¥æ—¶é—´æ®µæ•°æ®
                 cursor.execute(insert_period_query, (
                     task_id,
                     format_datetime(start_datetime),
                     format_datetime(end_datetime)
                 ))
             
-                # Ìá½»ÊÂÎñ
+                # æäº¤äº‹åŠ¡
             conn.commit()
         except Exception as e:
-        # ·¢Éú´íÎóÊ±»Ø¹ö
+        # å‘ç”Ÿé”™è¯¯æ—¶å›æ»š
             conn.rollback()
             raise e
         finally:

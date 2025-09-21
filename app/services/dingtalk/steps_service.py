@@ -46,32 +46,30 @@ class SportService:
         
     async def insert_steps_record(
         self,
-        userId:str,
-        data: UserStepResponse,
+        userid:str,
+        date:str,
         conn 
-    ):
+    )->int:
         # 插入用户步数信息
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-        stepinfolist = data.stepinfo_list
         try:
-            for stepinfo in stepinfolist:
-                steps = stepinfo.step_count
-                date = stepinfo.stat_date
-        
-                check_sql = "SELECT id FROM online_status WHERE userid = %s AND date = %s"
-                cursor.execute(check_sql, (userId, date))
-                existing_record = cursor.fetchone()
-                
-                if existing_record:
-                    # 2. 记录存在，直接更新
-                    update_sql = "UPDATE online_status SET steps = %s WHERE userid = %s AND date = %s"
-                    cursor.execute(update_sql, (steps, userId, date))
-                else:
-                    # 3. 记录不存在，插入新记录
-                    insert_sql = "INSERT INTO online_status (userid, date, steps) VALUES (%s, %s, %s)"
-                    cursor.execute(insert_sql, (userId, date, steps))
-            
+            cursor = conn.cursor(pymysql.cursors.DictCursor)
+            # 查询主表获取attendance_id
+            query_main = f"""
+            SELECT steps FROM online_status
+            WHERE userid = %s AND date = %s
+            """
+            cursor.execute(query_main, (userid,date))
+            steps_record = cursor.fetchone()
             conn.commit()
+            return steps_record
+            
         except Exception as e:
-            logger.error(f"insert steps info fail: {str(e)}")
-            raise Exception(f"insert steps info fail: {str(e)}")
+        # 发生错误时回滚
+            conn.rollback()
+            logger.error(f"查找用户步数失败: {e}")
+            raise e
+        finally:
+            if cursor:
+                cursor.close()
+        
+        

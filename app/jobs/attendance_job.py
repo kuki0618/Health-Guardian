@@ -2,14 +2,17 @@ import logging
 from datetime import datetime
 from typing import List
 from services.dingtalk.attendance_service import AttendanceService
+from services.dingtalk.steps_service import SportService
+from api.models.steps import UserStepRequest
 from repository import database
 from fastapi import Depends
 
 logger = logging.getLogger(__name__)
 
 class AttendanceJob:
-    def __init__(self, attendance_service: AttendanceService):
+    def __init__(self, attendance_service: AttendanceService,sport_service: SportService):
         self.attendance_service = attendance_service
+        self.sport_service = sport_service
     
     async def job_process_attendance_for_users(self, userids: List[str]):
         """处理用户考勤任务"""
@@ -42,10 +45,14 @@ class AttendanceJob:
                         if len(check_out_records):
                             logger.info(f"接收到用户{userid}签退数据：{check_out_records}")
                             check_out_result = True
-                            await self.attendance_service.add_attendance_info(result.recordresult,conn=database.get_db_connection())
-                            await self.attendance_service.attendance_manager.mark_checked_out(userid)
                             logger.info(f"用户 {userid} 已签退")
                 
+                            # 签退时获取用户步数
+                            await self.attendance_service.add_attendance_info(result.recordresult,conn=database.get_db_connection())
+                            steps_data = await self.attendance_service.attendance_manager.mark_checked_out(UserStepRequest(userid))
+                            if steps_data:
+                                self.sport_service.insert_steps_record(steps_data)
+                                
                 logger.info(f"用户 {userid} 考勤处理成功，签到状态：{check_in_result}，签退状态：{check_out_result}")
                 
             except Exception as e:

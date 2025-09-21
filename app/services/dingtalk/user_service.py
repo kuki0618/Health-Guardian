@@ -1,7 +1,7 @@
 import httpx
 import json
 import logging
-from typing import Dict, Any
+from typing import Dict, Any,List
 import pymysql.cursors
 
 from api.dependencies.dingtalk_token import get_dingtalk_access_token
@@ -114,3 +114,33 @@ class UserService:
         finally:
             if cursor:
                 cursor.close()
+    def get_online_time_periods(
+        userid:str, 
+        conn ) -> List[Dict[str, Any]]:
+        cursor = None
+        try:
+            cursor = conn.cursor(pymysql.cursors.DictCursor)
+            # 查询主表获取attendance_id
+            query_main = f"""
+            SELECT name,title,hobby,age FROM employees
+            WHERE userid = %s
+            """
+            cursor.execute(query_main, (userid,))
+            user_record = cursor.fetchone()
+            conn.commit()
+            if user_record:
+                return user_record
+            else:
+                logger.info(f"{userid} 有问题，找不到用户数据")
+                return None
+            
+        except Exception as e:
+        # 发生错误时回滚
+            conn.rollback()
+            logger.error(f"插入用户信息失败: {e}")
+            raise e
+        finally:
+            if cursor:
+                cursor.close()
+        
+        

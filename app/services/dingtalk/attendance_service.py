@@ -43,7 +43,7 @@ class AttendanceManager:
         now = datetime.now()
         current_time = now.time()
         start_time = time(start_hour, 0)
-        end_time = time(end_hour, 0)
+        end_time = time(end_hour, 59)
         return start_time <= current_time <= end_time
     
     async def get_attendance_status(self, userid: str) -> Dict[str, bool]:
@@ -62,7 +62,7 @@ class AttendanceManager:
         """判断是否应该调用签到api请求"""
         async with self.lock:
             
-            in_checkin_period = self._is_in_time_period(8,22)
+            in_checkin_period = self._is_in_time_period(8,23)
 
             return in_checkin_period
     
@@ -70,7 +70,7 @@ class AttendanceManager:
         """判断是否应该调用签退api请求"""
         async with self.lock:
             
-            in_checkout_period = self._is_in_time_period(18,22)
+            in_checkout_period = self._is_in_time_period(18,23)
 
             return in_checkout_period 
     

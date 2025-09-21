@@ -3,15 +3,18 @@ import requests
 from typing import Dict, Any, Optional
 from fastapi import HTTPException
 import logging
+from core import config
+
+AMAP_API_KEY =config.AMAP_API_KEY
 
 logger = logging.getLogger(__name__)
 
 class WeatherService:
-    def __init__(self, amap_api_key: str):
-        self.amap_api_key = amap_api_key
+    def __init__(self):
+        self.amap_api_key = AMAP_API_KEY
         self.base_url = "https://restapi.amap.com/v3/weather/weatherInfo"
 
-    async def get_weather_data(self, city: str = "320500", extensions: str = "base") -> Dict[str, Any]:
+    async def get_weather_data(self, city: str, extensions: str = "base") -> Dict[str, Any]:
         
         #获取高德地图天气数据
         

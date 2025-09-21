@@ -9,9 +9,8 @@ AMAP_API_KEY =config.AMAP_API_KEY
 router = APIRouter(prefix="/weather", tags=["weather"])
 
 # 依赖项：获取天气服务实例
-def get_weather_service(api_key: str = AMAP_API_KEY) -> WeatherService:
-    print(f"get amap api key: {api_key}")
-    return WeatherService(api_key)
+def get_weather_service() -> WeatherService:
+    return WeatherService()
 
 @router.get("/current", response_model=WeatherResponse)
 async def get_current_weather(

@@ -46,7 +46,8 @@ class AttendanceManager:
         end_time = time(end_hour, 0)
         return start_time <= current_time <= end_time
     
-    async def should_check_in(self, userid: str) -> bool:
+    async def get_attendance_status(self, userid: str) -> Dict[str, bool]:
+        """获取用户今天的考勤状态"""
         async with self.lock:
             today = self._get_today_key()
             
@@ -55,19 +56,22 @@ class AttendanceManager:
             if userid not in self.daily_status[today]:
                 self.daily_status[today][userid] = {'checked_in': False, 'checked_out': False}
             
-            in_checkin_period = self._is_in_time_period(8, 12)
-            return in_checkin_period 
+            return self.daily_status[today][userid].copy()
+         
+    async def is_in_checkin_period(self) -> bool:
+        """判断是否应该调用签到api请求"""
+        async with self.lock:
+            
+            in_checkin_period = self._is_in_time_period(8,20)
+
+            return in_checkin_period
     
-    async def should_check_out(self, userid: str) -> bool:
+    async def is_in_checkout_period(self) -> bool:
+        """判断是否应该调用签退api请求"""
         async with self.lock:
-            today = self._get_today_key()
             
-            if today not in self.daily_status:
-                self.daily_status[today] = {}
-            if userid not in self.daily_status[today]:
-                self.daily_status[today][userid] = {'checked_in': False, 'checked_out': False}
-            
-            in_checkout_period = self._is_in_time_period(18, 20)
+            in_checkout_period = self._is_in_time_period(18,20)
+
             return in_checkout_period 
     
     async def mark_checked_in(self, userid: str):
@@ -136,10 +140,11 @@ class AttendanceService:
     async def check_attendance_for_user(self, userid:str) -> AttendanceResponse:
         #服务层：处理考勤逻辑
         try:
-            now = datetime.datetime.now()
-            current_hour = now.hour
-            start_time = current_hour-1  # 08:00-12:00
-            end_time = current_hour
+            now = datetime.now()
+            hour_start = now.replace(minute=0, second=0, microsecond=0)
+
+            end_time= now.strftime("%Y-%m-%d %H:%M:%S")
+            start_time = hour_start.strftime("%Y-%m-%d %H:%M:%S")
 
             # 获取访问令牌
             access_token = await get_dingtalk_access_token()
@@ -160,8 +165,8 @@ class AttendanceService:
                 response = await client.post(url, params=params, headers=headers, json=data)
                 response.raise_for_status()
                 response_data = response.json()
-                
-                if "recordresult" in response_data:
+
+                if response_data.get("recordresult") != []:
                     records = reschedule_data(response_data)
                     return AttendanceResponse(
                         action_taken=True,
@@ -186,14 +191,15 @@ class AttendanceService:
 
     async def add_attendance_info(
         self,
-        all_data:List[dict],
+        all_data:List[AttendanceRecord],
         conn
         ):
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        cursor = None
         try:
+            cursor = conn.cursor(pymysql.cursors.DictCursor)
             for data in all_data:
-                user_id = data['userid']
-                date = data['date']
+                user_id = data.userid
+                date = data.date
                 select_query = """
                 SELECT id FROM online_status WHERE userid = %s AND date = %s
                 """
@@ -214,8 +220,8 @@ class AttendanceService:
                     # 获取刚插入的主键ID
                     main_id = cursor.lastrowid
 
-                time = data['datetime']
-                checkType = data['checkType']
+                time = data.datetime
+                checkType = data.checkType
                 # 第二步：插入子表 online_time_periods
                 insert_period_query = f"""
                 INSERT INTO attendance_data (task_id,userCheckTime,checkType) 
@@ -231,4 +237,5 @@ class AttendanceService:
             conn.rollback()
             raise e
         finally:
-            cursor.close()
+            if cursor:
+                cursor.close()

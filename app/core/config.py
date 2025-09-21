@@ -12,3 +12,5 @@ DB_PASSWORD=os.getenv("DB_PASSWORD")
 DB_NAME=os.getenv("DB_NAME")
 DB_PORT = int(os.getenv("DB_PORT", 3306)) 
 AGENT_ID = os.getenv("AGENT_ID")
+DEFAULT_CITY= "320500"
+USER_IDS=os.getenv("USER_IDS").split(",")

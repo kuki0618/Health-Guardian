@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 from fastapi import FastAPI,HTTPException
 import httpx
+import logging
 import os
-from dotenv import load_dotenv
+from core import config
 
-load_dotenv()
+DINGTALK_APP_KEY = config.DINGTALK_APP_KEY
+DINGTALK_APP_SECRET = config.DINGTALK_APP_SECRET
 
-DINGTALK_APP_KEY = os.getenv("DINGTALK_APP_KEY")
-DINGTALK_APP_SECRET = os.getenv("DINGTALK_APP_SECRET")
+logger = logging.getLogger("app.api")
 
 async def get_dingtalk_access_token() -> str:
     url = "https://api.dingtalk.com/v1.0/oauth2/accessToken"
@@ -21,7 +22,6 @@ async def get_dingtalk_access_token() -> str:
             response = await client.post(url, json=data)
             response.raise_for_status()
             token_data = response.json()
-            print(f"get access token data: {token_data}")
             return token_data["accessToken"]
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"fail to get access token: {str(e)}")

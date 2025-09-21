@@ -7,8 +7,7 @@ import pymysql.cursors
 from api.dependencies.dingtalk_token import get_dingtalk_access_token
 from api.models.user import UserDetailResponse
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__) 
 
 class UserService:
     def __init__(self):
@@ -16,6 +15,7 @@ class UserService:
     
     async def get_user_details(self, userid: str) -> UserDetailResponse:
         #获取用户详情 - 服务层方法
+        logger = logging.getLogger(__name__)
         try:
             access_token = await get_dingtalk_access_token()
             logger.info(f"获取到凭证:{access_token}")
@@ -44,6 +44,7 @@ class UserService:
                 
                 # 转换数据格式
                 user_info = self._transform_user_data(response_data)
+                logger.info(f"获取到用户详情: {user_info}")
                 return user_info
                 
         except httpx.HTTPStatusError as e:
@@ -78,11 +79,12 @@ class UserService:
         
         return user_info
     
-    async def add_employee_info(
+    def add_employee_info(
         self,
         item: dict,
         conn
     ):
+        cursor = None
         try:
             cursor = conn.cursor(pymysql.cursors.DictCursor)
             
@@ -92,7 +94,7 @@ class UserService:
             values = tuple(item.values())
 
             # 检查是否已存在
-            check_query = "SELECT id FROM employees WHERE userid = %s"
+            check_query = "SELECT userid FROM employees WHERE userid = %s"
             cursor.execute(check_query, (item['userid'],))
             existing = cursor.fetchone()
             if existing:
@@ -101,10 +103,14 @@ class UserService:
                 query = f"INSERT INTO employees ({columns}) VALUES ({placeholders})"
                 cursor.execute(query, values)
                 logger.info(f"用户 {item['userid']}信息添加成功")
+
             conn.commit()
+            
         except Exception as e:
         # 发生错误时回滚
             conn.rollback()
+            logger.error(f"插入用户信息失败: {e}")
             raise e
         finally:
-            cursor.close()
+            if cursor:
+                cursor.close()

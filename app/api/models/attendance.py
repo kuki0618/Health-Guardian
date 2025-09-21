@@ -1,5 +1,5 @@
 # app/models/attendance.py
-from pydantic import BaseModel
+from pydantic import BaseModel,ConfigDict
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
@@ -34,8 +34,8 @@ class AttendanceRequest(BaseModel):
     offset: int = 0
     limit: int = 50
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra = {
             "example": {
                 "userIdList": ["manager4585"],
                 "workDateFrom": "2025-09-15 00:00:00 ",
@@ -44,3 +44,4 @@ class AttendanceRequest(BaseModel):
                 "limit":50
             }
         }
+    )

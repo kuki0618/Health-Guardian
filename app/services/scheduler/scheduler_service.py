@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from jobs.attendance_job import AttendanceJob
@@ -21,17 +22,19 @@ class SchedulerService:
             # 考勤检查任务 - 每小时执行
             self.scheduler.add_job(
                 self.attendance_job.job_process_attendance_for_users,
-                trigger=IntervalTrigger(hours=1),
+                trigger=IntervalTrigger(seconds=20),
                 args=[config.USER_IDS],
-                id="attendance_check"
+                id="attendance_check",
+                next_run_time=datetime.now()
             )
             
             # 状态检查任务 - 每30分钟执行
             self.scheduler.add_job(
                 self.status_job.check_user_status_and_send_alerts,
-                trigger=IntervalTrigger(minutes=2),
+                trigger=IntervalTrigger(seconds=20),
                 args=[config.USER_IDS],
-                id="status_check"
+                id="status_check",
+                next_run_time=datetime.now()
             )
             
             self.scheduler.start()

@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from typing import List
+from repository import database
 from services.dingtalk.FreeBusy_service import FreeBusyService
 from services.amap.weather_service import WeatherService
 from services.dingtalk.attendance_service import AttendanceService
@@ -10,6 +11,7 @@ from utils.change_time_format import change_time_format
 from core import config
 from api.models.FreeBusy import FreeBusyRequest
 from api.models.message import AsyncSendRequest,Message,TextContent
+from fastapi import Depends
 
 logger = logging.getLogger(__name__)
 
@@ -28,23 +30,29 @@ class StatusJob:
     
     async def check_user_status_and_send_alerts(self, userids: List[str]):
         """检查用户状态并发送提醒"""
+        logger.info(f"检查用户状态并发送提醒，用户列表：{userids}")
         for userid in userids:
             try:
                 # 检查用户考勤状态
-                attendance_status = await self.attendance_service.attendance_manager.daily_status(userid)
-                
-                if attendance_status["checked_in"] and not attendance_status["checked_out"]:
+                logger.info(f"检查用户 {userid} 考勤状态")            
+                attendance_status = await self.attendance_service.attendance_manager.get_attendance_status(userid)
+                check_in_result = attendance_status["checked_in"]
+                check_out_result = attendance_status["checked_out"]
+                logger.info(f"检查到用户 {userid} 考勤状态，签到状态：{check_in_result},签退状态：{check_out_result}")
+                if check_in_result and not check_out_result:
                     # 查询用户忙闲状态
                     freebusy_result = await self.freebusy_service.get_user_free_busy_status(userid)
-                    
                     if freebusy_result != []:
-                        await self.freebusy_service.insert_freebusy_record(userid, freebusy_result)
                         
+                        logger.info(f"检查到用户 {userid} 忙碌：{freebusy_result}")
+                        await self.freebusy_service.insert_freebusy_record(userid, freebusy_result)
                         # 检查在线时长
-                        for i in len(freebusy_result):
+                        online_duration = 0
+                        for i in range(len(freebusy_result)):
                             online_duration += change_time_format( freebusy_result[i]["start_datetime"], freebusy_result[i]["end_datetime"])
                         
                         if online_duration > 90 * 60:  # 90分钟
+                            logger.info(f"检查到用户 {userid} 忙碌时长超过90分钟")
                             await self._send_health_alert(userid)
                 
             except Exception as e:
@@ -73,6 +81,8 @@ class StatusJob:
             
             # 生成健康消息（这里可以调用AI模型）
             health_msg = await self._generate_health_message(user_info, weather_info, work_status)
+            
+            logger.info(f"生成健康提醒：{health_msg}")
             
             # 发送消息
             request = AsyncSendRequest(

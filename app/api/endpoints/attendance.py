@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime
 from typing import List
 
-from core import database
+from repository import database
 from services.dingtalk.attendance_service import AttendanceService, AttendanceManager
 from api.models.attendance import AttendanceResponse,AttendanceRequest
 

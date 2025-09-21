@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Optional
 
-from core import database
+from repository import database
 from services.dingtalk.user_service import UserService
 from api.models.user import UserDetailResponse
 

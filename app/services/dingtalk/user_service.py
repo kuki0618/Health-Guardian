@@ -4,7 +4,6 @@ import logging
 from typing import Dict, Any
 import pymysql.cursors
 
-from core import database
 from api.dependencies.dingtalk_token import get_dingtalk_access_token
 from api.models.user import UserDetailResponse
 
@@ -19,7 +18,7 @@ class UserService:
         #获取用户详情 - 服务层方法
         try:
             access_token = await get_dingtalk_access_token()
-            logger.info(f"get access token success: {access_token}")
+            logger.info(f"获取到凭证:{access_token}")
             
             # 调用钉钉API
             url = "https://oapi.dingtalk.com/topapi/v2/user/get"
@@ -40,6 +39,7 @@ class UserService:
                 # 验证响应
                 if response_data.get('errcode') != 0:
                     error_msg = response_data.get('errmsg', 'Unknown error')
+                    logger.error(f"调用用户信息API时错误: {error_msg}")
                     raise Exception(f"API fail: {error_msg}")
                 
                 # 转换数据格式

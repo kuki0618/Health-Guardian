@@ -7,7 +7,6 @@ import httpx
 import logging
 import pymysql.cursors
 
-from core import database
 from api.dependencies.dingtalk_token import get_dingtalk_access_token
 from api.models.attendance import AttendanceResponse, AttendanceRecord,AttendanceRequest
 
@@ -95,14 +94,14 @@ class AttendanceService:
         self.attendance_manager = attendance_manager
     
     async def process_attendance_for_user(self, request: AttendanceRequest) -> AttendanceResponse:
-        #·şÎñ²ã£º´¦Àí¿¼ÇÚÂß¼­
+        #æœåŠ¡å±‚ï¼šå¤„ç†è€ƒå‹¤é€»è¾‘
         try:
             
-            # »ñÈ¡·ÃÎÊÁîÅÆ
+            # è·å–è®¿é—®ä»¤ç‰Œ
             access_token = await get_dingtalk_access_token()
-            #logger.info(f"»ñÈ¡·ÃÎÊÁîÅÆ: {access_token}")
+            #logger.info(f"è·å–è®¿é—®ä»¤ç‰Œ: {access_token}")
             
-            # µ÷ÓÃ¶¤¶¤API
+            # è°ƒç”¨é’‰é’‰API
             url = "https://oapi.dingtalk.com/attendance/list"
             params = {"access_token": access_token}
             headers = {"Content-Type": "application/json"}
@@ -134,6 +133,57 @@ class AttendanceService:
                 error=str(e)
             )
         
+    async def check_attendance_for_user(self, userid:str) -> AttendanceResponse:
+        #æœåŠ¡å±‚ï¼šå¤„ç†è€ƒå‹¤é€»è¾‘
+        try:
+            now = datetime.datetime.now()
+            current_hour = now.hour
+            start_time = current_hour-1  # 08:00-12:00
+            end_time = current_hour
+
+            # è·å–è®¿é—®ä»¤ç‰Œ
+            access_token = await get_dingtalk_access_token()
+            #logger.info(f"è·å–è®¿é—®ä»¤ç‰Œ: {access_token}")
+            request = AttendanceRequest(
+                userIdList=[userid],
+                workDateFrom=start_time,
+                workDateTo=end_time,
+                offset=0,
+                limit=50
+            )
+            # è°ƒç”¨é’‰é’‰API
+            url = "https://oapi.dingtalk.com/attendance/list"
+            params = {"access_token": access_token}
+            headers = {"Content-Type": "application/json"}
+            data = request.dict()
+            async with httpx.AsyncClient() as client:
+                response = await client.post(url, params=params, headers=headers, json=data)
+                response.raise_for_status()
+                response_data = response.json()
+                
+                if "recordresult" in response_data:
+                    records = reschedule_data(response_data)
+                    return AttendanceResponse(
+                        action_taken=True,
+                        checked=True,
+                        recordresult=records
+                    )
+                else:
+                    return AttendanceResponse(
+                        action_taken=True,
+                        checked=False,
+                        errormsg=response_data.get("errmsg"),
+                        errorcode=response_data.get("errcode", 0)
+                    )
+                    
+        except Exception as e:
+            logger.error(f"error: {str(e)}")
+            return AttendanceResponse(
+                action_taken=False,
+                error=str(e)
+            )
+    
+
     async def add_attendance_info(
         self,
         all_data:List[dict],
@@ -151,33 +201,33 @@ class AttendanceService:
                 existing_record = cursor.fetchone()
 
                 if existing_record:
-                    # ¼ÇÂ¼ÒÑ´æÔÚ£¬Ê¹ÓÃÏÖÓĞID
+                    # è®°å½•å·²å­˜åœ¨ï¼Œä½¿ç”¨ç°æœ‰ID
                     main_id = existing_record['id']
-                    logger.info(f"record exist,id: {main_id}")
                 else:   
-                    # µÚÒ»²½£º²åÈëÖ÷±í online_status£¬»ñÈ¡attendance_id
+                    # ç¬¬ä¸€æ­¥ï¼šæ’å…¥ä¸»è¡¨ online_statusï¼Œè·å–attendance_id
                     insert_main_query = f"""
                     INSERT INTO online_status (userid, date) 
                     VALUES (%s, %s)
                     """
                     cursor.execute(insert_main_query, (user_id, date))
                     
-                    # »ñÈ¡¸Õ²åÈëµÄÖ÷¼üID
+                    # è·å–åˆšæ’å…¥çš„ä¸»é”®ID
                     main_id = cursor.lastrowid
 
                 time = data['datetime']
                 checkType = data['checkType']
-                # µÚ¶ş²½£º²åÈë×Ó±í online_time_periods
+                # ç¬¬äºŒæ­¥ï¼šæ’å…¥å­è¡¨ online_time_periods
                 insert_period_query = f"""
                 INSERT INTO attendance_data (task_id,userCheckTime,checkType) 
                 VALUES (%s, %s, %s)
                 """
                 cursor.execute(insert_period_query, (main_id, time, checkType))
-
-                # Ìá½»ÊÂÎñ
+                
+            logger.info(f"æ·»åŠ è€ƒå‹¤ä¿¡æ¯: {all_data}")
+                # æäº¤äº‹åŠ¡
             conn.commit()
         except Exception as e:
-        # ·¢Éú´íÎóÊ±»Ø¹ö
+        # å‘ç”Ÿé”™è¯¯æ—¶å›æ»š
             conn.rollback()
             raise e
         finally:

@@ -1,7 +1,5 @@
 import pymysql.cursors
 
-from core import database
-
 async def find_userid_by_unionid(
         unionid: str,
         conn

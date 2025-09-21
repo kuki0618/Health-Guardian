@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List, Dict, Optional
 from datetime import date
 
-from core import database
+from repository import database
 from services.dingtalk.steps_service import SportService
 from api.models.steps import UserStepResponse, UserStepRequest,StepInfo
 

@@ -1,9 +1,12 @@
 import httpx
+import logging
 from typing import Dict, Any
 from api.dependencies.dingtalk_token import get_dingtalk_access_token
 from api.models.message import AsyncSendRequest
 from datetime import datetime
 import pymysql.cursors
+
+logger = logging.getLogger(__name__)
 
 class SendMessageService:
     def __init__(self):

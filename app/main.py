@@ -1,21 +1,48 @@
 ﻿import logging
-from fastapi import FastAPI
+import logging.config
+import json
+import os
+from pathlib import Path
+from repository import database
+from fastapi import FastAPI,Request
 from contextlib import asynccontextmanager
 
-from core import config, database
+from core import config
 from services.dingtalk.user_service import UserService
 from services.scheduler.scheduler_service import SchedulerService
 from jobs.attendance_job import AttendanceJob
 from jobs.status_job import StatusJob
-from core import database
-from api.endpoints import attendance, weather, user, calendar, freebusy, steps
+from repository import database
+from api.endpoints import Attendance, Weather, User, Calendar, FreeBusy, Steps
 
 # 配置日志
-logging.basicConfig(level=logging.INFO)
+def setup_logging():
+  
+    project_root = Path(__file__).parent.parent
+
+    config_path = project_root / "log" / "logging_app_config.json"
+
+    if not config_path.exists():
+        raise FileNotFoundError(f"Logging config file not found: {config_path}")
+    
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config = json.load(f)
+    
+    log_dir = project_root / "logs"
+    log_dir.mkdir(exist_ok=True)
+    
+    logging.config.dictConfig(config)
+    print(f"Logging configured from: {config_path}")
+
+# 在程序最开始调用配置函数
+
 logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    #配置日志
+    setup_logging()
+
     # 启动应用
     logger.info("应用启动中...")
     
@@ -57,12 +84,22 @@ app = FastAPI(
 )
 
 # 注册路由
-app.include_router(attendance.router)
-app.include_router(weather.router)
-app.include_router(user.router)
-app.include_router(calendar.router)
-app.include_router(freebusy.router)
-app.include_router(steps.router)
+app.include_router(Attendance.router)
+app.include_router(Weather.router)
+app.include_router(User.router)
+app.include_router(Calendar.router)
+app.include_router(FreeBusy.router)
+app.include_router(Steps.router)
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    request_logger = logging.getLogger("http")
+    request_logger.info(f"Request: {request.method} {request.url}")
+    
+    response = await call_next(request)
+    
+    request_logger.info(f"Response: {response.status_code}")
+    return response
 
 @app.get("/")
 async def root():

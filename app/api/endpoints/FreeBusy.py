@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from core import database
+from repository import database
 from services.dingtalk.FreeBusy_service import FreeBusyService
 from api.models.FreeBusy import FreeBusyResponse,FreeBusyRequest
 
@@ -38,7 +38,6 @@ async def get_user_free_busy_status(
 ):
     
     #获取用户某一段时间的忙闲状态
-  
     try:
         request = FreeBusyRequest(
             userIds=[userId],

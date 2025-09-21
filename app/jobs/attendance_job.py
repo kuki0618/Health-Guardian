@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import List
 from services.dingtalk.attendance_service import AttendanceService
-from core import database
+from repository import database
 from fastapi import Depends
 
 logger = logging.getLogger(__name__)

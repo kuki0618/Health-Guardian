@@ -100,7 +100,7 @@ class FreeBusyService:
         try:
             # 设置查询时间范围（当前时间到2小时前）
             time_max = datetime.now()
-            time_min = time_max - timedelta(hours=2)
+            time_min = time_max - timedelta(hours=3)
             
             # 格式化时间字符串（ISO 8601格式）
             startTime = time_min.strftime("%Y-%m-%dT%H:%M:%S") + "+08:00"
@@ -185,3 +185,40 @@ class FreeBusyService:
             raise e
         finally:
             cursor.close()
+
+    async def get_online_time_periods(
+            self,
+        userid:str, 
+        target_times: List[str],
+        conn )-> List[Dict[str, Any]]:
+        all_periods = {}
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
+        for target_time in target_times:
+        # 查询主表获取attendance_id
+            query_main = f"""
+            SELECT id FROM online_status
+            WHERE userid = %s AND date = %s
+            """
+            cursor.execute(query_main, (userid, target_time))
+            main_record = cursor.fetchone()
+            
+            if not main_record:
+                print(f"未找到员工 {userid} 在 {target_time} 的记录")
+                continue
+            
+            task_id = main_record['id']
+            
+            # 查询时间段子表
+            query_periods = f"""
+            SELECT start_datetime, end_datetime 
+            FROM online_time_periods 
+            WHERE task_id = %s 
+            ORDER BY start_datetime
+            """
+            cursor.execute(query_periods, (task_id,))
+            periods = []
+            for period in cursor.fetchall():
+                periods.append((period['start_datetime'], period['end_datetime']))
+            all_periods[target_time] = periods
+        
+        return all_periods

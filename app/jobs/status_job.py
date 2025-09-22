@@ -57,7 +57,7 @@ class StatusJob:
                             online_duration += change_time_format( freebusy_result[i]["start_datetime"], freebusy_result[i]["end_datetime"])
                         
                         if online_duration > 75 * 60:  # 90分钟
-                            logger.info(f"检查到用户 {userid} 忙碌时长超过90分钟")
+                            logger.info(f"检查到用户 {userid} 忙碌时长超过75分钟")
                             await self._send_health_alert(userid)
                     else:
                         logger.info(f"检查到用户{userid}暂时没有忙碌状态")
@@ -72,7 +72,7 @@ class StatusJob:
             logger.info("开始生成并发送健康提醒...")
 
             # 获取用户信息
-            user_info = await self.user_service.get_userinfo_from_database(userid)
+            user_info = self.user_service.get_userinfo_from_database(userid,conn=database.get_db_connection())
             user_info_dict = { "employee_info": user_info}
 
             # 获取天气信息
@@ -81,19 +81,14 @@ class StatusJob:
 
             # 获取最近7天工作状态
             target_dates = [
-                (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%dT%H:%M:%S+08:00") 
+                (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d") 
                 for i in range(7)
             ]
 
-            unionid = await find_unionid_by_userId(userid,conn=database.get_db_connection())
-            request = FreeBusyRequest(
-                userIds=[unionid],
-                startTime=target_dates[6],
-                endTime=target_dates[0]
-            )
-            work_status = await self.freebusy_service.get_user_free_busy_status(request)
-            work_status_dict = {"work_status": [item.model_dump() for item in work_status]}
-            
+            work_status = await self.freebusy_service.get_online_time_periods(userid,target_dates,conn=database.get_db_connection())
+            work_status_dict = {"work_status": work_status}
+            logger.info(f"检查到用户 {userid} 最近7天工作状态:{work_status}")
+
             # 获取步数信息
             steps_info = await self.steps_service.get_steps_record(userid,date=datetime.now().strftime("%Y-%m-%d"),conn=database.get_db_connection())
             steps_info_dict = { "steps": steps_info}
@@ -118,9 +113,11 @@ class StatusJob:
             )
             )
             await self.message_service.async_send_message(request)
-            
+            logger.info(f"发送健康提醒，用户：{userid}")
             # 保存提醒记录
             await self.message_service.insert_health_message(userid, health_msg, datetime.now(),conn=database.get_db_connection())
+            logger.info(f"保存健康提醒记录，用户：{userid}")
+
             
         except Exception as e:
             logger.error(f"发送健康提醒失败: {e}")

@@ -114,9 +114,11 @@ class UserService:
         finally:
             if cursor:
                 cursor.close()
-    def get_online_time_periods(
+    def get_userinfo_from_database(
+            self,
         userid:str, 
-        conn ) -> List[Dict[str, Any]]:
+        conn 
+        ) -> List[Dict[str, Any]]:
         cursor = None
         try:
             cursor = conn.cursor(pymysql.cursors.DictCursor)

@@ -13,26 +13,26 @@ class SendMessageService:
         self.async_send_url = "https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2"
     
     async def async_send_message(self, request: AsyncSendRequest) -> Dict[str, Any]:
-        #Òì²½·¢ËÍÏûÏ¢·şÎñ
+        #å¼‚æ­¥å‘é€æ¶ˆæ¯æœåŠ¡
         
         try:
-            # 1. »ñÈ¡·ÃÎÊÁîÅÆ
+            # 1. è·å–è®¿é—®ä»¤ç‰Œ
             access_token = await get_dingtalk_access_token()
             
-            # 2. ×¼±¸ÇëÇóÍ·
+            # 2. å‡†å¤‡è¯·æ±‚å¤´
             params = {"access_token": access_token}
 
             headers = {"Content-Type": "application/json"}
             
-            # 3. ×¼±¸ÇëÇóÌå
+            # 3. å‡†å¤‡è¯·æ±‚ä½“
             data = {
                 "agent_id": request.agent_id,
-                "to_all_user": False,  # ¸ù¾İuserid_list·¢ËÍ£¬²»ÊÇÈ«²¿ÓÃ»§
+                "to_all_user": False,  # æ ¹æ®userid_listå‘é€ï¼Œä¸æ˜¯å…¨éƒ¨ç”¨æˆ·
                 "userid_list": request.userid_list,
                 "msg": request.msg.dict()
             }
             
-            # 4. ·¢ËÍÒì²½ÏûÏ¢ÇëÇó
+            # 4. å‘é€å¼‚æ­¥æ¶ˆæ¯è¯·æ±‚
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     self.async_send_url,
@@ -61,7 +61,7 @@ class SendMessageService:
             health_msg: str, 
             time: datetime,
             conn):
-        # ²åÈë½¡¿µÏûÏ¢µ½Êı¾İ¿â
+        # æ’å…¥å¥åº·æ¶ˆæ¯åˆ°æ•°æ®åº“
         cursor = conn.cursor(pymysql.cursors.DictCursor)
         try:
             date= time.strftime("%Y-%m-%d")
@@ -75,35 +75,41 @@ class SendMessageService:
                 task_id = existing_record['id']
                 logger.info(f"record exist,id: {task_id}")
             else:
-            # µÚÒ»²½£º²åÈëÖ÷±í online_status£¬»ñÈ¡attendance_id
+            # ç¬¬ä¸€æ­¥ï¼šæ’å…¥ä¸»è¡¨ online_statusï¼Œè·å–attendance_id
                 insert_main_query = f"""
                 INSERT INTO online_status (userid, date) 
                 VALUES (%s, %s)
                 """
                 cursor.execute(insert_main_query, (userId, date))
-            
-            # »ñÈ¡¸Õ²åÈëµÄÖ÷¼üID
-            task_id = cursor.lastrowid
+
+            if task_id is None:
+                # å¦‚æœlastrowidè¿”å›Noneï¼Œé‡æ–°æŸ¥è¯¢
+                cursor.execute(select_query, (userId, date))
+                existing_record = cursor.fetchone()
+                if existing_record:
+                    task_id = existing_record['id']
+                else:
+                    raise Exception("æ— æ³•è·å–æˆ–åˆ›å»ºonline_statusè®°å½•")
                 
-            # µÚ¶ş²½£º²åÈë×Ó±í online_time_periods
+            # ç¬¬äºŒæ­¥ï¼šæ’å…¥å­è¡¨ online_time_periods
             insert_period_query = f"""
-            INSERT INTO health_messages (task_id, msg, date_time) 
+            INSERT INTO health_message (task_id, msg, date_time) 
             VALUES (%s, %s, %s)
             """
             
             date_time = time.strftime("%Y-%m-%d %H:%M:%S")
             
-            # ²åÈëÊ±¼ä¶ÎÊı¾İ
+            # æ’å…¥æ—¶é—´æ®µæ•°æ®
             cursor.execute(insert_period_query, (
                 task_id,
                 health_msg,
                 date_time
             ))
         
-            # Ìá½»ÊÂÎñ
+            # æäº¤äº‹åŠ¡
             conn.commit()
         except Exception as e:
-        # ·¢Éú´íÎóÊ±»Ø¹ö
+        # å‘ç”Ÿé”™è¯¯æ—¶å›æ»š
             conn.rollback()
             raise e
         finally:

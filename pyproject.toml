@@ -1,0 +1,86 @@
+# 构建系统配置
+[build-system]
+# 指定构建所需的依赖
+requires = ["setuptools>=42", "wheel"]
+# 指定构建后端
+build-backend = "setuptools.build_meta"
+
+# 项目元信息配置
+[project]
+# 项目名称
+name = "health-guardian"
+# 项目版本号
+version = "0.1.0"
+# 项目描述
+description = "An intelligent office assistant combining attendance, health status and LLM roles"
+# 作者信息
+authors = [
+    {name = "Zhao Yixuan", email = "2332616240@qq.com"},
+]
+# 项目README文件
+readme = "README.md"
+# Python版本要求
+requires-python = ">=3.10"
+# PyPI分类器
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+# 项目依赖项配置
+dependencies = [
+    # Web框架
+    "fastapi>=0.116.1",
+    # ASGI服务器
+    "uvicorn[standard]>=0.35.0",
+    # ORM工具
+    "sqlmodel>=0.0.24",
+    # MySQL驱动
+    "pymysql>=1.1.2",
+    # HTTP请求库
+    "requests>=2.32.5",
+    # 异步HTTP客户端
+    "httpx>=0.28.1",
+    # 任务调度
+    "apscheduler>=3.11.0",
+    # 环境变量管理
+    "python-dotenv>=1.1.1",
+    # 配置管理
+    "pydantic-settings>=2.10.1",
+    # 日期时间处理
+    "python-dateutil>=2.9.0",
+    # 表单解析支持
+    "python-multipart>=0.0.20",
+    # LLM集成框架
+    "langchain>=0.3.27",
+    # LLM相关依赖
+    "langchain-community>=0.3.29",
+    "langchain-core>=0.3.76",
+    "openai>=1.108.1",
+    "tiktoken>=0.11.0",
+]
+
+# 可选依赖项配置（开发环境）
+[project.optional-dependencies]
+dev = [
+"pytest>=7.0",
+    # 代码格式化工具
+    "black>=23.0",
+    # 导入排序工具
+    "isort>=5.0",
+    # 静态类型检查
+    "mypy>=1.0",
+    # 类型扩展
+    "mypy-extensions>=1.1.0",
+    # HTTP相关
+    "httpcore>=1.0.9",
+    "httpx-sse>=0.4.1",
+    # 数据处理
+    "orjson>=3.11.3",
+    "numpy>=2.2.6",
+]
+
+# 项目URL配置
+[project.urls]
+# 代码仓库地址
+Repository = "https://github.com/kuki0618/Health-Guardian"

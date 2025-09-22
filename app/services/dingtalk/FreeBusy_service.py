@@ -107,7 +107,6 @@ class FreeBusyService:
             endTime = time_max.strftime("%Y-%m-%dT%H:%M:%S") + "+08:00"
 
             unionid = await find_unionid_by_userId(userId,conn=database.get_db_connection())
-            logger.info(f"查找到{userId}的unionid:{unionid}")
             request = FreeBusyRequest(
                 userIds=[unionid],
                 startTime=startTime,

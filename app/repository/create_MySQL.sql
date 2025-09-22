@@ -6,10 +6,6 @@ CREATE TABLE employees (
     age INT, -- 年龄
 );
 
-TRUNCATE TABLE employees;
-
-ALTER TABLE online_status AUTO_INCREMENT = 1;
-
 ALTER TABLE employees ADD COLUMN unionid VARCHAR(100) NOT NULL
 
 DROP TABLE IF EXISTS employees;
@@ -50,7 +46,6 @@ CREATE TABLE online_status (
     date DATE NOT NULL FOREIGN KEY (userid) REFERENCES employees (userid) ON DELETE CASCADE
 );
 
-ALTER TABLE online_status
 ADD UNIQUE KEY unique_user_date (userid, date);
 
 ALTER TABLE online_status AUTO_INCREMENT = 1;
@@ -59,8 +54,6 @@ ALTER TABLE online_status ADD COLUMN steps INT DEFAULT 0;
 
 ALTER TABLE online_status
 ADD CONSTRAINT fk_online_status_userid FOREIGN KEY (userid) REFERENCES employees (userid) ON DELETE CASCADE;
-
-DROP TABLE IF EXISTS online_status
 
 CREATE TABLE online_time_periods (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -71,10 +64,6 @@ CREATE TABLE online_time_periods (
     FOREIGN KEY (task_id) REFERENCES online_status (id) ON DELETE CASCADE
 );
 
-TRUNCATE TABLE online_time_periods
-
-DROP TABLE IF EXISTS online_time_periods;
-
 CREATE TABLE health_message (
     id INT AUTO_INCREMENT PRIMARY KEY,
     task_id INT NOT NULL, -- 外键，关联到主表的任务ID
@@ -84,10 +73,6 @@ CREATE TABLE health_message (
     FOREIGN KEY (task_id) REFERENCES online_status (id) ON DELETE CASCADE
 );
 
-TRUNCATE TABLE health_message;
-
-DROP TABLE IF EXISTS health_message;
-
 CREATE TABLE attendance_data (
     id INT AUTO_INCREMENT PRIMARY KEY,
     task_id INT NOT NULL, -- 外键，关联到主表的任务ID
@@ -96,10 +81,6 @@ CREATE TABLE attendance_data (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (task_id) REFERENCES online_status (id) ON DELETE CASCADE
 );
-
-TRUNCATE TABLE attendance_data;
-
-DROP TABLE IF EXISTS attendance_data;
 
 INSERT INTO
     online_status (userid, date)
@@ -125,31 +106,68 @@ INSERT INTO
     )
 VALUES (
         1,
-        '2025-09-06 08:28:45',
-        '2025-09-06 10:00:00'
+        "2025-9-18 09:30:00",
+        "2025-9-18 11:00:00"
     ),
     (
         1,
-        '2025-09-06 11:26:38',
-        '2025-09-06 12:45:58'
+        "2025-9-18 13:30:00",
+        "2025-9-18 14:20:00"
     ),
     (
         1,
-        '2025-09-06 13:56:35',
-        '2025-09-ne06 15:00:00'
-    );
-
-INSERT INTO
-    health_message (task_id, data_time, msg)
-VALUES (
-        1,
-        '2025-09-06 11:00:00',
-        "您从9点到11点连续在线工作,建议起身活动一下,深呼吸或远眺放松眼睛。今日气温较高(32℃),请多喝水防暑降温哦！"
+        "2025-9-18 15:30:00",
+        "2025-9-18 17:00:00"
     ),
     (
         2,
-        '2025-09-06 15:00:00',
-        "您下午3点至5点持续在岗,记得适当起身走动,避免久坐。今天温度29℃,午后炎热,请及时补水,保持水分充足～"
+        "2025-9-19 08:30:00",
+        "2025-9-19 10:40:00"
+    ),
+    (
+        2,
+        "2025-9-19 13:20:00",
+        "2025-9-19 15:50:00"
+    ),
+    (
+        2,
+        "2025-9-19 17:20:00",
+        "2025-9-19 19:00:00"
+    ),
+    (
+        3,
+        "2025-9-20 08:40:00",
+        "2025-9-20 11:00:00"
+    ),
+    (
+        3,
+        "2025-9-20 13:00:00",
+        "2025-9-20 14:30:00"
+    ),
+    (
+        3,
+        "2025-9-20 15:30:00",
+        "2025-9-20 17:30:00"
+    ),
+    (
+        3,
+        "2025-9-20 18:00:00",
+        "2025-9-20 19:00:00"
+    ),
+    (
+        4,
+        "2025-9-21 08:30:00",
+        "2025-9-21 11:45:00"
+    ),
+    (
+        4,
+        "2025-9-21 14:00:00",
+        "2025-9-21 16:30:00"
+    ),
+    (
+        4,
+        "2025-9-21 17:30:00",
+        "2025-9-21 19:00:00"
     );
 
 INSERT INTO
@@ -159,62 +177,42 @@ INSERT INTO
         checkType
     )
 VALUES (
-        2,
-        '2025-09-16 8:45:32',
-        "OnDuty"
-    ),
-    (
-        2,
-        '2025-09-16 18:01:47',
-        "OffDuty"
-    ),
-    (
-        3,
-        '2025-09-17 8:32:51',
-        "OnDuty"
-    ),
-    (
-        3,
-        '2025-09-17 18:30:28',
-        "OffDuty"
-    ),
-    (
-        13,
+        1,
         '2025-09-18 8:19:17',
         "OnDuty"
     ),
     (
-        13,
+        1,
         '2025-09-18 18:16:20',
         "OffDuty"
     ),
     (
-        14,
+        2,
         '2025-09-19 8:21:56',
         "OnDuty"
     ),
     (
-        14,
+        2,
         '2025-09-19 19:42:16',
         "OffDuty"
     ),
     (
-        15,
+        3,
         '2025-09-20 8:46:39',
         "OnDuty"
     ),
     (
-        15,
+        3,
         '2025-09-20 18:55:05',
         "OffDuty"
     ),
     (
-        16,
+        4,
         '2025-09-21 8:39:57',
         "OnDuty"
     ),
     (
-        16,
+        4,
         '2025-09-21 19:03:57',
         "OffDuty"
     ),

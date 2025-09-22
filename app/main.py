@@ -23,7 +23,7 @@ from app.services.dingtalk.steps_service import SportService
 from app.jobs.attendance_job import AttendanceJob
 from app.jobs.status_job import StatusJob
 from app.repository import database
-from app.api.endpoints import Attendance, Weather, User, Calendar, FreeBusy, Steps
+from app.api.endpoints import Attendance, weather, user, Calendar, FreeBusy, steps
 
 # 配置日志
 def setup_logging():
@@ -110,11 +110,11 @@ app = FastAPI(
 
 # 注册路由
 app.include_router(Attendance.router)
-app.include_router(Weather.router)
-app.include_router(User.router)
+app.include_router(weather.router)
+app.include_router(user.router)
 app.include_router(Calendar.router)
 app.include_router(FreeBusy.router)
-app.include_router(Steps.router)
+app.include_router(steps.router)
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):

@@ -7,7 +7,7 @@ from services.amap.weather_service import WeatherService
 from services.dingtalk.attendance_service import AttendanceService
 from services.dingtalk.message_service import SendMessageService
 from services.dingtalk.user_service import UserService
-from services.dingtalk.steps_service import StepsService
+from services.dingtalk.steps_service import SportService
 from utils.change_time_format import change_time_format
 from models.deepseek_model_server import create_message
 from core import config
@@ -24,7 +24,7 @@ class StatusJob:
                  attendance_service: AttendanceService,
                  message_service: SendMessageService,
                  user_service: UserService,
-                 steps_service: StepsService):
+                 steps_service: SportService):
         self.freebusy_service = freebusy_service
         self.weather_service = weather_service
         self.attendance_service = attendance_service
@@ -56,7 +56,7 @@ class StatusJob:
                         for i in range(len(freebusy_result)):
                             online_duration += change_time_format( freebusy_result[i]["start_datetime"], freebusy_result[i]["end_datetime"])
                         
-                        if online_duration > 90 * 60:  # 90分钟
+                        if online_duration > 75 * 60:  # 90分钟
                             logger.info(f"检查到用户 {userid} 忙碌时长超过90分钟")
                             await self._send_health_alert(userid)
                     else:
@@ -127,5 +127,5 @@ class StatusJob:
     
     async def _generate_health_message(self, all_data:dict):
         """生成健康提醒消息(集成AI模型)"""
-        content = create_message(all_data)
+        content =create_message(all_data)
         return content

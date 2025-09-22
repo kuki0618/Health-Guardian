@@ -19,6 +19,7 @@ from app.services.amap.weather_service import WeatherService
 from app.services.dingtalk.attendance_service import AttendanceService,AttendanceManager
 from app.services.dingtalk.message_service import SendMessageService
 from app.services.dingtalk.user_service import UserService
+from app.services.dingtalk.steps_service import SportService
 from app.jobs.attendance_job import AttendanceJob
 from app.jobs.status_job import StatusJob
 from app.repository import database
@@ -81,11 +82,12 @@ async def lifespan(app: FastAPI):
     weather_service = WeatherService()
     message_service = SendMessageService()
     user_service= UserService()
+    steps_service = SportService()
 
     # 然后创建 attendance_job，传入必需的参数
-    attendance_job = AttendanceJob(attendance_service)
+    attendance_job = AttendanceJob(attendance_service,steps_service)
 
-    status_job = StatusJob(free_busy_service, weather_service, attendance_service, message_service, user_service)
+    status_job = StatusJob(free_busy_service, weather_service, attendance_service, message_service, user_service,steps_service)
 
     scheduler_service = SchedulerService(attendance_job, status_job)
     

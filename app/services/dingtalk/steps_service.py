@@ -13,7 +13,7 @@ class SportService:
         self.client = httpx.AsyncClient(timeout=30.0)
     
     async def get_user_steps(self, request: UserStepRequest) -> UserStepResponse:
-        #»ñÈ¡ÓÃ»§²½ÊıĞÅÏ¢ - ·şÎñ²ã·½·¨
+        #è·å–ç”¨æˆ·æ­¥æ•°ä¿¡æ¯ - æœåŠ¡å±‚æ–¹æ³•
         try:
             access_token = await get_dingtalk_access_token()
             
@@ -32,28 +32,28 @@ class SportService:
                 response.raise_for_status()
                 
                 response_data = response.json()
-                logger.debug(f"steps API response: {response_data}")
+                logger.debug(f"å¾—åˆ°APIå“åº”: {response_data}")
                 
-                # ×ª»»ÎªPydanticÄ£ĞÍ
+                # è½¬æ¢ä¸ºPydanticæ¨¡å‹
                 return  response_data 
                 
         except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP query fail: {e}")
-            raise Exception(f"API query fail: {e}")
+            logger.error(f"APIæŸ¥è¯¢å¤±è´¥: {e}")
+            raise Exception(f"APIæŸ¥è¯¢å¤±è´¥: {e}")
         except Exception as e:
-            logger.error(f"get steps info fail: {str(e)}")
-            raise Exception(f"get steps info fail: {str(e)}")
+            logger.error(f"è·å–æ­¥æ•°å¤±è´¥: {str(e)}")
+            raise Exception(f"è·å–æ­¥æ•°å¤±è´¥: {str(e)}")
         
-    async def insert_steps_record(
+    async def get_steps_record(
         self,
         userid:str,
         date:str,
         conn 
     )->int:
-        # ²åÈëÓÃ»§²½ÊıĞÅÏ¢
+        # æ’å…¥ç”¨æˆ·æ­¥æ•°ä¿¡æ¯
         try:
             cursor = conn.cursor(pymysql.cursors.DictCursor)
-            # ²éÑ¯Ö÷±í»ñÈ¡attendance_id
+            # æŸ¥è¯¢ä¸»è¡¨è·å–attendance_id
             query_main = f"""
             SELECT steps FROM online_status
             WHERE userid = %s AND date = %s
@@ -64,9 +64,9 @@ class SportService:
             return steps_record
             
         except Exception as e:
-        # ·¢Éú´íÎóÊ±»Ø¹ö
+        # å‘ç”Ÿé”™è¯¯æ—¶å›æ»š
             conn.rollback()
-            logger.error(f"²éÕÒÓÃ»§²½ÊıÊ§°Ü: {e}")
+            logger.error(f"æŸ¥æ‰¾ç”¨æˆ·æ­¥æ•°å¤±è´¥: {e}")
             raise e
         finally:
             if cursor:
